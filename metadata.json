@@ -1,0 +1,6 @@
+{
+  "name": "فضاء الأرقام",
+  "description": "تطبيق تعليمي كرتوني ممتع للأطفال لتعلّم الحساب والعد عبر رحلة فضائية تفاعلية ومؤثرات صوتية وحركية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
