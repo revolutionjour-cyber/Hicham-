@@ -1,8 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,12 +30,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.BrandAmber
+import com.example.ui.theme.BrandEmerald
+import com.example.ui.theme.BrandSkyBlue
+import com.example.ui.theme.BrandSkyBlueBg
+import com.example.ui.theme.CairoFontFamily
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.FredokaFontFamily
+import com.example.ui.theme.TextDark
 import kotlinx.coroutines.delay
 
 @Composable
@@ -45,7 +56,6 @@ fun LevelCompleteView(
   onHome: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  // Staggered star animation
   val star1Scale = remember { Animatable(0f) }
   val star2Scale = remember { Animatable(0f) }
   val star3Scale = remember { Animatable(0f) }
@@ -53,60 +63,57 @@ fun LevelCompleteView(
   LaunchedEffect(Unit) {
     delay(200)
     if (starsEarned >= 1) {
-      star1Scale.animateTo(1.2f, tween(200, easing = FastOutSlowInEasing))
-      star1Scale.animateTo(1f, tween(150, easing = FastOutSlowInEasing))
+      star1Scale.animateTo(1.3f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+      star1Scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
     }
-    delay(150)
+    delay(160)
     if (starsEarned >= 2) {
-      star2Scale.animateTo(1.2f, tween(200, easing = FastOutSlowInEasing))
-      star2Scale.animateTo(1f, tween(150, easing = FastOutSlowInEasing))
+      star2Scale.animateTo(1.3f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+      star2Scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
     }
-    delay(150)
+    delay(160)
     if (starsEarned >= 3) {
-      star3Scale.animateTo(1.2f, tween(200, easing = FastOutSlowInEasing))
-      star3Scale.animateTo(1f, tween(150, easing = FastOutSlowInEasing))
+      star3Scale.animateTo(1.3f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+      star3Scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
     }
   }
 
   Box(
     modifier = modifier
       .fillMaxSize()
-      .background(Color(0xCC0B041E)),
+      .background(Color(0x800F172A)),
     contentAlignment = Alignment.Center
   ) {
-    // Confetti particles in background
+    // Dynamic celebration confetti
     ConfettiParticleExplosion(triggerKey = 999)
 
     Column(
       modifier = Modifier
         .fillMaxWidth(0.9f)
-        .shadow(16.dp, RoundedCornerShape(36.dp))
+        .shadow(20.dp, RoundedCornerShape(36.dp), spotColor = Color(0x4038BDF8))
         .clip(RoundedCornerShape(36.dp))
-        .background(
-          brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF2E1065), Color(0xFF1E1B4B), Color(0xFF0F172A))
-          )
-        )
-        .border(4.dp, Color(0xFF818CF8), RoundedCornerShape(36.dp))
+        .background(Color.White)
+        .border(3.dp, BrandSkyBlue.copy(alpha = 0.4f), RoundedCornerShape(36.dp))
         .padding(horizontal = 24.dp, vertical = 28.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // Jumping Happy Astronaut Mascot
+      // 1. Celebrating Cartoon Mascot
       CartoonAstronautMascot(
-        sizeDp = 130.dp,
+        sizeDp = 125.dp,
         mood = MascotMood.CELEBRATING
       )
 
-      // Short Arabic cheer
+      // 2. Victory Cheer Title (Zero Unicode emoji)
       Text(
-        text = "أحسنت يا بطل! 🌟",
-        fontSize = 32.sp,
+        text = "أحسنت يا بطل!",
+        fontFamily = CairoFontFamily,
         fontWeight = FontWeight.Black,
-        color = Color(0xFFFDE047)
+        fontSize = 30.sp,
+        color = TextDark
       )
 
-      // 3 Big Animated Stars ⭐⭐⭐
+      // 3. Staggered 3D Golden Illustrated Stars (Zero Unicode emoji)
       Row(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -114,85 +121,96 @@ fun LevelCompleteView(
         // Star 1
         Box(
           modifier = Modifier
-            .size(54.dp)
+            .size(56.dp)
             .scale(star1Scale.value),
           contentAlignment = Alignment.Center
         ) {
-          Text(
-            text = if (starsEarned >= 1) "⭐" else "☆",
-            fontSize = 44.sp,
-            color = Color(0xFFFDE047)
+          IllustratedStar(
+            isFilled = starsEarned >= 1,
+            sizeDp = 50.dp
           )
         }
-        // Center Star (slightly larger)
+        // Center Star (larger)
         Box(
           modifier = Modifier
-            .size(66.dp)
+            .size(72.dp)
             .scale(star2Scale.value),
           contentAlignment = Alignment.Center
         ) {
-          Text(
-            text = if (starsEarned >= 2) "⭐" else "☆",
-            fontSize = 56.sp,
-            color = Color(0xFFFDE047)
+          IllustratedStar(
+            isFilled = starsEarned >= 2,
+            sizeDp = 64.dp
           )
         }
         // Star 3
         Box(
           modifier = Modifier
-            .size(54.dp)
+            .size(56.dp)
             .scale(star3Scale.value),
           contentAlignment = Alignment.Center
         ) {
-          Text(
-            text = if (starsEarned >= 3) "⭐" else "☆",
-            fontSize = 44.sp,
-            color = Color(0xFFFDE047)
+          IllustratedStar(
+            isFilled = starsEarned >= 3,
+            sizeDp = 50.dp
           )
         }
       }
 
-      // Total Points Card
+      // 4. Rewards Summary Card with custom illustrated icons
       Box(
         modifier = Modifier
-          .clip(RoundedCornerShape(20.dp))
-          .background(Color(0x356366F1))
-          .border(2.dp, Color(0x60A5B4FC), RoundedCornerShape(20.dp))
-          .padding(horizontal = 24.dp, vertical = 10.dp)
+          .clip(RoundedCornerShape(22.dp))
+          .background(Color(0xFFF8FAFC))
+          .border(1.5.dp, CardBorder, RoundedCornerShape(22.dp))
+          .padding(horizontal = 26.dp, vertical = 12.dp)
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(16.dp)
+          horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(text = "⭐", fontSize = 24.sp)
-            Text(text = "+$starsEarned", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFFFDE047))
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            IllustratedStar(sizeDp = 26.dp, isFilled = true)
+            Text(
+              text = "+$starsEarned",
+              fontFamily = FredokaFontFamily,
+              fontSize = 26.sp,
+              fontWeight = FontWeight.Bold,
+              color = BrandAmber
+            )
           }
-          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(text = "🪙", fontSize = 24.sp)
-            Text(text = "+${starsEarned * 3}", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF38BDF8))
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            IllustratedCoin(sizeDp = 26.dp)
+            Text(
+              text = "+${starsEarned * 3}",
+              fontFamily = FredokaFontFamily,
+              fontSize = 26.sp,
+              fontWeight = FontWeight.Bold,
+              color = BrandSkyBlue
+            )
           }
         }
       }
 
-      // 3 Giant Action Buttons: Replay 🔄, Next 🚀, Home 🏠
+      // 5. Action Buttons (Replay, Next Level, Home) with vector icons
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        // Replay Button 🔄
+        // Replay Button (Illustrated Vector)
         Box(
           modifier = Modifier
             .size(68.dp)
-            .shadow(6.dp, CircleShape)
+            .shadow(6.dp, CircleShape, spotColor = Color(0x40F97316))
             .clip(CircleShape)
-            .background(
-              brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFFB923C), Color(0xFFEA580C))
-              )
-            )
-            .border(3.dp, Color.White, CircleShape)
+            .background(Color(0xFFFFEDD5))
+            .border(2.dp, Color(0xFFF97316), CircleShape)
             .clickable(
               interactionSource = remember { MutableInteractionSource() },
               indication = null,
@@ -201,22 +219,23 @@ fun LevelCompleteView(
             .testTag("replay_button"),
           contentAlignment = Alignment.Center
         ) {
-          Text(text = "🔄", fontSize = 32.sp)
+          Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = "إعادة",
+            tint = Color(0xFFEA580C),
+            modifier = Modifier.size(32.dp)
+          )
         }
 
-        // Next Level Button 🚀 ➡️ (if available)
+        // Next Level Button (Illustrated Rocket Vector)
         if (onNextLevel != null) {
           Box(
             modifier = Modifier
               .size(78.dp)
-              .shadow(8.dp, CircleShape)
+              .shadow(10.dp, CircleShape, spotColor = BrandEmerald)
               .clip(CircleShape)
-              .background(
-                brush = Brush.verticalGradient(
-                  colors = listOf(Color(0xFF22C55E), Color(0xFF16A34A))
-                )
-              )
-              .border(3.5.dp, Color.White, CircleShape)
+              .background(BrandEmerald)
+              .border(3.dp, Color.White, CircleShape)
               .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -225,22 +244,18 @@ fun LevelCompleteView(
               .testTag("next_level_button"),
             contentAlignment = Alignment.Center
           ) {
-            Text(text = "🚀", fontSize = 40.sp)
+            CuteRocket(sizeDp = 48.dp)
           }
         }
 
-        // Home Button 🏠
+        // Home Button (Illustrated Home Vector)
         Box(
           modifier = Modifier
             .size(68.dp)
-            .shadow(6.dp, CircleShape)
+            .shadow(6.dp, CircleShape, spotColor = BrandSkyBlue)
             .clip(CircleShape)
-            .background(
-              brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
-              )
-            )
-            .border(3.dp, Color.White, CircleShape)
+            .background(BrandSkyBlueBg)
+            .border(2.dp, BrandSkyBlue, CircleShape)
             .clickable(
               interactionSource = remember { MutableInteractionSource() },
               indication = null,
@@ -249,7 +264,12 @@ fun LevelCompleteView(
             .testTag("home_button"),
           contentAlignment = Alignment.Center
         ) {
-          Text(text = "🏠", fontSize = 32.sp)
+          Icon(
+            imageVector = Icons.Default.Home,
+            contentDescription = "الرئيسية",
+            tint = BrandSkyBlue,
+            modifier = Modifier.size(32.dp)
+          )
         }
       }
     }

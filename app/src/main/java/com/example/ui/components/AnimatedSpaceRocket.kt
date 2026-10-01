@@ -27,27 +27,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.FredokaFontFamily
 
 @Composable
 fun CuteRocket(
   modifier: Modifier = Modifier,
-  sizeDp: Dp = 56.dp,
-  tiltDegrees: Float = 45f
+  sizeDp: Dp = 56.dp
 ) {
-  val infiniteTransition = rememberInfiniteTransition(label = "rocket_flame")
+  val infiniteTransition = rememberInfiniteTransition(label = "rocket_fx")
   val flameScale by infiniteTransition.animateFloat(
     initialValue = 0.8f,
-    targetValue = 1.3f,
+    targetValue = 1.35f,
     animationSpec = infiniteRepeatable(
       animation = tween(120, easing = LinearEasing),
       repeatMode = RepeatMode.Reverse
@@ -59,84 +56,102 @@ fun CuteRocket(
     val w = size.width
     val h = size.height
     val cx = w * 0.5f
-    val cy = h * 0.45f
+    val cy = h * 0.44f
 
-    // Flame
-    val flameLength = h * 0.35f * flameScale
-    val flamePath = Path().apply {
-      moveTo(cx - w * 0.12f, cy + h * 0.28f)
+    // 1. Triple Flame Exhaust (Orange, Yellow, Cyan core)
+    val flameLength = h * 0.38f * flameScale
+    val outerFlame = Path().apply {
+      moveTo(cx - w * 0.14f, cy + h * 0.28f)
       lineTo(cx, cy + h * 0.28f + flameLength)
-      lineTo(cx + w * 0.12f, cy + h * 0.28f)
+      lineTo(cx + w * 0.14f, cy + h * 0.28f)
       close()
     }
-    drawPath(flamePath, color = Color(0xFFFF9100))
+    drawPath(
+      outerFlame,
+      brush = Brush.verticalGradient(
+        colors = listOf(Color(0xFFFF9100), Color(0xFFFF3D00), Color.Transparent)
+      )
+    )
 
-    val innerFlamePath = Path().apply {
-      moveTo(cx - w * 0.06f, cy + h * 0.28f)
-      lineTo(cx, cy + h * 0.28f + flameLength * 0.6f)
-      lineTo(cx + w * 0.06f, cy + h * 0.28f)
+    val midFlame = Path().apply {
+      moveTo(cx - w * 0.08f, cy + h * 0.28f)
+      lineTo(cx, cy + h * 0.28f + flameLength * 0.65f)
+      lineTo(cx + w * 0.08f, cy + h * 0.28f)
       close()
     }
-    drawPath(innerFlamePath, color = Color(0xFFFFEA00))
+    drawPath(midFlame, color = Color(0xFFFFEA00))
 
-    // Fins
+    val innerFlame = Path().apply {
+      moveTo(cx - w * 0.04f, cy + h * 0.28f)
+      lineTo(cx, cy + h * 0.28f + flameLength * 0.35f)
+      lineTo(cx + w * 0.04f, cy + h * 0.28f)
+      close()
+    }
+    drawPath(innerFlame, color = Color(0xFF00E5FF))
+
+    // 2. Aerodynamic Stabilizer Fins (Coral Magenta)
     val leftFin = Path().apply {
-      moveTo(cx - w * 0.18f, cy + h * 0.08f)
-      lineTo(cx - w * 0.38f, cy + h * 0.3f)
+      moveTo(cx - w * 0.18f, cy + h * 0.06f)
+      lineTo(cx - w * 0.4f, cy + h * 0.3f)
       lineTo(cx - w * 0.18f, cy + h * 0.26f)
       close()
     }
-    drawPath(leftFin, color = Color(0xFFE11D48))
+    drawPath(leftFin, color = Color(0xFFF43F5E))
 
     val rightFin = Path().apply {
-      moveTo(cx + w * 0.18f, cy + h * 0.08f)
-      lineTo(cx + w * 0.38f, cy + h * 0.3f)
+      moveTo(cx + w * 0.18f, cy + h * 0.06f)
+      lineTo(cx + w * 0.4f, cy + h * 0.3f)
       lineTo(cx + w * 0.18f, cy + h * 0.26f)
       close()
     }
-    drawPath(rightFin, color = Color(0xFFE11D48))
+    drawPath(rightFin, color = Color(0xFFF43F5E))
 
-    // Rocket Body
+    // 3. Rocket Fuselage (Glossy Ceramic White)
     val bodyPath = Path().apply {
-      moveTo(cx, cy - h * 0.38f)
-      cubicTo(cx + w * 0.24f, cy - h * 0.15f, cx + w * 0.24f, cy + h * 0.2f, cx + w * 0.18f, cy + h * 0.28f)
+      moveTo(cx, cy - h * 0.4f)
+      cubicTo(cx + w * 0.25f, cy - h * 0.15f, cx + w * 0.25f, cy + h * 0.2f, cx + w * 0.18f, cy + h * 0.28f)
       lineTo(cx - w * 0.18f, cy + h * 0.28f)
-      cubicTo(cx - w * 0.24f, cy + h * 0.2f, cx - w * 0.24f, cy - h * 0.15f, cx, cy - h * 0.38f)
+      cubicTo(cx - w * 0.25f, cy + h * 0.2f, cx - w * 0.25f, cy - h * 0.15f, cx, cy - h * 0.4f)
       close()
     }
-    drawPath(bodyPath, color = Color.White)
+    drawPath(
+      bodyPath,
+      brush = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFE2E8F0), Color.White, Color(0xFFCBD5E1))
+      )
+    )
 
-    // Nose Cone
+    // 4. Nose Cone (Coral Red)
     val nosePath = Path().apply {
-      moveTo(cx, cy - h * 0.38f)
-      cubicTo(cx + w * 0.14f, cy - h * 0.25f, cx + w * 0.18f, cy - h * 0.15f, cx + w * 0.19f, cy - h * 0.1f)
-      lineTo(cx - w * 0.19f, cy - h * 0.1f)
-      cubicTo(cx - w * 0.18f, cy - h * 0.15f, cx - w * 0.14f, cy - h * 0.25f, cx, cy - h * 0.38f)
+      moveTo(cx, cy - h * 0.4f)
+      cubicTo(cx + w * 0.15f, cy - h * 0.26f, cx + w * 0.19f, cy - h * 0.15f, cx + w * 0.2f, cy - h * 0.1f)
+      lineTo(cx - w * 0.2f, cy - h * 0.1f)
+      cubicTo(cx - w * 0.19f, cy - h * 0.15f, cx - w * 0.15f, cy - h * 0.26f, cx, cy - h * 0.4f)
       close()
     }
     drawPath(nosePath, color = Color(0xFFE11D48))
 
-    // Porthole Window
+    // 5. Porthole Window with Glass Glint
     drawCircle(
-      color = Color(0xFF38BDF8),
-      radius = w * 0.11f,
+      color = Color(0xFF0284C7),
+      radius = w * 0.12f,
       center = Offset(cx, cy + h * 0.02f)
     )
     drawCircle(
-      color = Color(0xFF0284C7),
-      radius = w * 0.085f,
+      color = Color(0xFF38BDF8),
+      radius = w * 0.09f,
       center = Offset(cx, cy + h * 0.02f)
     )
     drawCircle(
       color = Color.White,
-      radius = w * 0.03f,
-      center = Offset(cx - w * 0.03f, cy - h * 0.005f)
+      radius = w * 0.035f,
+      center = Offset(cx - w * 0.035f, cy - h * 0.01f)
     )
   }
 }
 
 /**
- * Visual checkpoint bar where the rocket advances from planet start to goal planet
+ * Checkpoint progress bar where the rocket advances from start to destination planet
  */
 @Composable
 fun RocketProgressBar(
@@ -153,34 +168,34 @@ fun RocketProgressBar(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 20.dp, vertical = 6.dp),
+      .padding(horizontal = 16.dp, vertical = 6.dp),
     contentAlignment = Alignment.CenterStart
   ) {
-    // Background track
+    // 1. Frosted Glass Background Track
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .height(14.dp)
-        .shadow(3.dp, RoundedCornerShape(7.dp))
-        .clip(RoundedCornerShape(7.dp))
-        .background(Color(0xFF312E81))
-        .border(1.5.dp, Color(0xFF6366F1).copy(alpha = 0.5f), RoundedCornerShape(7.dp))
+        .height(16.dp)
+        .shadow(4.dp, RoundedCornerShape(8.dp))
+        .clip(RoundedCornerShape(8.dp))
+        .background(Color(0x351E1B4B))
+        .border(1.dp, Color(0x30FFFFFF), RoundedCornerShape(8.dp))
     )
 
-    // Glowing Fill track
+    // 2. Radiant Progress Fill
     Box(
       modifier = Modifier
         .fillMaxWidth(fraction = animatedProgress)
-        .height(14.dp)
-        .clip(RoundedCornerShape(7.dp))
+        .height(16.dp)
+        .clip(RoundedCornerShape(8.dp))
         .background(
           brush = Brush.horizontalGradient(
-            colors = listOf(Color(0xFF38BDF8), Color(0xFFFACC15), Color(0xFFF97316))
+            colors = listOf(Color(0xFF38BDF8), Color(0xFFFBBF24), Color(0xFFF97316))
           )
         )
     )
 
-    // Checkpoint icons
+    // 3. Staggered Checkpoint Stars along track
     Row(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
@@ -190,27 +205,32 @@ fun RocketProgressBar(
         val isPassed = step <= currentStep
         Box(
           modifier = Modifier
-            .size(24.dp)
-            .shadow(2.dp, CircleShape)
+            .size(28.dp)
+            .shadow(if (isPassed) 6.dp else 2.dp, CircleShape, spotColor = Color(0x80F59E0B))
             .clip(CircleShape)
             .background(
-              if (isPassed) Color(0xFFFACC15) else Color(0xFF1E1B4B)
+              if (isPassed) Color(0xFFFBBF24) else Color(0xFF1E1B4B)
             )
             .border(
               1.5.dp,
-              if (isPassed) Color.White else Color(0xFF475569),
+              if (isPassed) Color.White else Color(0x40FFFFFF),
               CircleShape
             ),
           contentAlignment = Alignment.Center
         ) {
           if (step == totalSteps) {
-            Text(text = "🪐", fontSize = 12.sp)
+            IllustratedPlanetOrb(sizeDp = 18.dp, level = 2)
           } else {
-            Text(
-              text = if (isPassed) "⭐" else "•",
-              fontSize = if (isPassed) 11.sp else 14.sp,
-              color = Color.White
-            )
+            if (isPassed) {
+              IllustratedStar(sizeDp = 16.dp, isFilled = true)
+            } else {
+              Box(
+                modifier = Modifier
+                  .size(8.dp)
+                  .clip(CircleShape)
+                  .background(Color(0xFF94A3B8))
+              )
+            }
           }
         }
       }

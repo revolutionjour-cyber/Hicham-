@@ -11,15 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.KidMathViewModel
-import com.example.ui.ScreenState
-import com.example.ui.components.LevelCompleteView
-import com.example.ui.screens.GamePlayScreen
-import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.ChalkboardPlayScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,7 +31,7 @@ class MainActivity : ComponentActivity() {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
           Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color(0xFF13092D)
+            color = androidx.compose.material3.MaterialTheme.colorScheme.background
           ) {
             KidMathApp(viewModel = viewModel)
           }
@@ -57,49 +53,36 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun KidMathApp(viewModel: KidMathViewModel) {
-  val screenState by viewModel.screenState.collectAsStateWithLifecycle()
-  val playState by viewModel.playState.collectAsStateWithLifecycle()
-  val gameState by viewModel.gameState.collectAsStateWithLifecycle()
+  val challenge by viewModel.currentChallenge.collectAsStateWithLifecycle()
+  val selectedOp by viewModel.selectedOp.collectAsStateWithLifecycle()
+  val selectedDifficulty by viewModel.selectedDifficulty.collectAsStateWithLifecycle()
+  val adaptiveTier by viewModel.adaptiveTier.collectAsStateWithLifecycle()
+  val totalStars by viewModel.directStars.collectAsStateWithLifecycle()
+  val comboStreak by viewModel.comboStreak.collectAsStateWithLifecycle()
+  val buttonStates by viewModel.directButtonStates.collectAsStateWithLifecycle()
+  val correctCheer by viewModel.correctCheer.collectAsStateWithLifecycle()
+  val confettiTrigger by viewModel.confettiTrigger.collectAsStateWithLifecycle()
+  val currentSlotAnswer by viewModel.currentSlotAnswer.collectAsStateWithLifecycle()
+  val isSlotAnswerWrong by viewModel.isSlotAnswerWrong.collectAsStateWithLifecycle()
   val isSoundEnabled by viewModel.soundManager.isSoundEnabled.collectAsStateWithLifecycle()
 
-  when (screenState) {
-    ScreenState.HOME -> {
-      HomeScreen(
-        gameState = gameState,
-        isSoundEnabled = isSoundEnabled,
-        onToggleSound = { viewModel.toggleSound() },
-        onSelectLevel = { level -> viewModel.startLevel(level) }
-      )
-    }
-    ScreenState.PLAYING -> {
-      GamePlayScreen(
-        playState = playState,
-        gameState = gameState,
-        isSoundEnabled = isSoundEnabled,
-        onToggleSound = { viewModel.toggleSound() },
-        onAnswerSelected = { answer -> viewModel.onAnswerSelected(answer) },
-        onItemTapped = { viewModel.onItemTapped() },
-        onBackToHome = { viewModel.navigateToHome() }
-      )
-    }
-    ScreenState.LEVEL_COMPLETE -> {
-      val nextAvailable = if (playState.currentLevel < 3) {
-        { viewModel.nextLevel() }
-      } else null
-
-      LevelCompleteView(
-        level = playState.currentLevel,
-        starsEarned = when {
-          playState.levelStarsEarned >= 5 -> 3
-          playState.levelStarsEarned >= 3 -> 2
-          else -> 1
-        },
-        totalStars = gameState.totalStars,
-        totalCoins = gameState.totalCoins,
-        onReplay = { viewModel.replayCurrentLevel() },
-        onNextLevel = nextAvailable,
-        onHome = { viewModel.navigateToHome() }
-      )
-    }
-  }
+  // Chalkboard screen with hand-written questions and drag-and-drop
+  ChalkboardPlayScreen(
+    challenge = challenge,
+    selectedOp = selectedOp,
+    selectedDifficulty = selectedDifficulty,
+    adaptiveTier = adaptiveTier,
+    totalStars = totalStars,
+    comboStreak = comboStreak,
+    buttonStates = buttonStates,
+    currentSlotAnswer = currentSlotAnswer,
+    isSlotAnswerWrong = isSlotAnswerWrong,
+    correctCheer = correctCheer,
+    confettiTrigger = confettiTrigger,
+    isSoundEnabled = isSoundEnabled,
+    onToggleSound = { viewModel.toggleSound() },
+    onSelectOp = { op -> viewModel.onSelectOp(op) },
+    onSelectDifficulty = { diff -> viewModel.onSelectDifficulty(diff) },
+    onAnswerDropped = { answer -> viewModel.onDirectAnswerSelected(answer) }
+  )
 }

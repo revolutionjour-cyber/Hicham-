@@ -5,15 +5,12 @@ enum class MathOperator(val symbol: String) {
   MINUS("-")
 }
 
-enum class CosmicItem(val emoji: String, val nameAr: String) {
-  STAR("⭐", "نجوم"),
-  ROCKET("🚀", "صواريخ"),
-  PLANET("🪐", "كواكب"),
-  UFO("🛸", "أطباق طائرة"),
-  ALIEN("👾", "كائنات فضائية"),
-  MOON("🌕", "أقمار"),
-  GEM("💎", "جواهر"),
-  SPARKLE("✨", "بريق")
+enum class TangibleItemType(val titleAr: String, val singularAr: String) {
+  SHINY_APPLE("تفاح أحمر لذيذ", "تفاحة"),
+  GOLDEN_STAR("نجوم ذهبية لامعة", "نجمة"),
+  MAGIC_CRYSTAL("بلورات طاقة سحرية", "بلورة"),
+  ENERGY_BATTERY("بطاريات فضائية قوية", "بطارية"),
+  GOLD_COIN("عملات ذهبية براقة", "عملة")
 }
 
 data class MathQuestion(
@@ -22,28 +19,38 @@ data class MathQuestion(
   val firstCount: Int,
   val secondCount: Int,
   val operator: MathOperator = MathOperator.PLUS,
-  val item: CosmicItem,
+  val item: TangibleItemType,
+  val promptAr: String,
   val options: List<Int>,
   val correctAnswer: Int
 ) {
   companion object {
     fun generateQuestionsForLevel(level: Int, count: Int = 5): List<MathQuestion> {
       val questions = mutableListOf<MathQuestion>()
-      val items = CosmicItem.values()
+      val items = TangibleItemType.values()
 
       when (level) {
         1 -> {
-          // Numbers 1 to 5. Pure addition, highly visual
+          // Numbers 1 to 5: High visual appeal, simple counting
           val pairs = listOf(
             Pair(1, 1), Pair(1, 2), Pair(2, 1), Pair(2, 2),
             Pair(3, 1), Pair(1, 3), Pair(2, 3), Pair(3, 2),
             Pair(4, 1), Pair(1, 4)
           ).shuffled()
 
+          val prompts = listOf(
+            "كم تفاحة لذيذة معنا في السلة؟",
+            "اجمع النجوم الذهبية وأخبرني بالعدد!",
+            "كم بطارية طاقة لدينا لتشغيل المركبة؟",
+            "عد البلورات السحرية واكتشف المجموع!",
+            "كم عملة ذهبية في الكنز؟"
+          )
+
           for (i in 0 until count) {
             val (a, b) = pairs[i % pairs.size]
             val answer = a + b
-            val item = items[i % 3] // STAR, ROCKET, PLANET
+            val item = items[i % items.size]
+            val prompt = prompts[i % prompts.size]
             val options = generateOptions(answer, minVal = 1, maxVal = 6, optionCount = 3)
             questions.add(
               MathQuestion(
@@ -53,6 +60,7 @@ data class MathQuestion(
                 secondCount = b,
                 operator = MathOperator.PLUS,
                 item = item,
+                promptAr = prompt,
                 options = options,
                 correctAnswer = answer
               )
@@ -60,15 +68,14 @@ data class MathQuestion(
           }
         }
         2 -> {
-          // Numbers up to 10. Addition & Subtraction
+          // Numbers up to 10: Addition and Subtraction
           val pool = mutableListOf<Triple<Int, Int, MathOperator>>()
-          // Addition up to 10
           listOf(
             Pair(3, 3), Pair(4, 2), Pair(5, 3), Pair(4, 4),
             Pair(5, 4), Pair(6, 2), Pair(5, 5), Pair(7, 2),
             Pair(3, 5), Pair(6, 3)
           ).forEach { pool.add(Triple(it.first, it.second, MathOperator.PLUS)) }
-          // Subtraction
+
           listOf(
             Pair(5, 2), Pair(6, 3), Pair(7, 2), Pair(8, 3),
             Pair(9, 4), Pair(6, 2), Pair(7, 4), Pair(8, 4)
@@ -78,7 +85,12 @@ data class MathQuestion(
           for (i in 0 until count) {
             val (a, b, op) = pool[i % pool.size]
             val answer = if (op == MathOperator.PLUS) a + b else a - b
-            val item = items[(i + 3) % items.size]
+            val item = items[(i + 1) % items.size]
+            val prompt = if (op == MathOperator.PLUS) {
+              "أضف المجموعتين معاً واكتشف الناتج!"
+            } else {
+              "أنقصنا بعض العناصر.. كم تبقى معنا الآن؟"
+            }
             val options = generateOptions(answer, minVal = 1, maxVal = 10, optionCount = 3)
             questions.add(
               MathQuestion(
@@ -88,6 +100,7 @@ data class MathQuestion(
                 secondCount = b,
                 operator = op,
                 item = item,
+                promptAr = prompt,
                 options = options,
                 correctAnswer = answer
               )
@@ -95,7 +108,7 @@ data class MathQuestion(
           }
         }
         3 -> {
-          // Numbers up to 15 / 20. Advanced cosmic challenges
+          // Numbers up to 20: Champion challenges
           val pool = listOf(
             Triple(6, 5, MathOperator.PLUS),
             Triple(7, 6, MathOperator.PLUS),
@@ -112,7 +125,12 @@ data class MathQuestion(
           for (i in 0 until count) {
             val (a, b, op) = pool[i % pool.size]
             val answer = if (op == MathOperator.PLUS) a + b else a - b
-            val item = items[(i + 5) % items.size]
+            val item = items[(i + 3) % items.size]
+            val prompt = if (op == MathOperator.PLUS) {
+              "تحدي الأبطال الكبير: ما هو المجموع الكلي؟"
+            } else {
+              "تحدي الطرح الذكي: احسب الباقي بدقة!"
+            }
             val options = generateOptions(answer, minVal = 1, maxVal = 20, optionCount = 4)
             questions.add(
               MathQuestion(
@@ -122,6 +140,7 @@ data class MathQuestion(
                 secondCount = b,
                 operator = op,
                 item = item,
+                promptAr = prompt,
                 options = options,
                 correctAnswer = answer
               )
@@ -135,7 +154,6 @@ data class MathQuestion(
     private fun generateOptions(correct: Int, minVal: Int, maxVal: Int, optionCount: Int): List<Int> {
       val options = mutableSetOf(correct)
       val candidates = mutableListOf<Int>()
-      // Prefer close distractors (±1, ±2)
       for (offset in listOf(-1, 1, -2, 2, -3, 3)) {
         val cand = correct + offset
         if (cand in minVal..maxVal && cand != correct) {
@@ -147,7 +165,6 @@ data class MathQuestion(
         options.add(c)
         if (options.size == optionCount) break
       }
-      // Fill remaining if needed
       var fallback = minVal
       while (options.size < optionCount && fallback <= maxVal) {
         options.add(fallback)

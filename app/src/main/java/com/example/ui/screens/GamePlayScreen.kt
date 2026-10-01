@@ -3,8 +3,8 @@ package com.example.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
@@ -43,10 +45,16 @@ import com.example.ui.components.CartoonAstronautMascot
 import com.example.ui.components.CartoonTopBar
 import com.example.ui.components.ConfettiParticleExplosion
 import com.example.ui.components.CuteRocket
+import com.example.ui.components.IllustratedPlanetOrb
+import com.example.ui.components.IllustratedStar
 import com.example.ui.components.KidAnswerButton
 import com.example.ui.components.PlayfulCosmicBackground
 import com.example.ui.components.RocketProgressBar
 import com.example.ui.components.VisualMathEquation
+import com.example.ui.theme.BrandAmber
+import com.example.ui.theme.BrandEmerald
+import com.example.ui.theme.CairoFontFamily
+import com.example.ui.theme.FredokaFontFamily
 
 @Composable
 fun GamePlayScreen(
@@ -66,17 +74,15 @@ fun GamePlayScreen(
 
   LaunchedEffect(playState.correctCheer) {
     if (playState.correctCheer != null) {
-      cheerScale.snapTo(0.2f)
-      cheerScale.animateTo(1.2f, tween(160, easing = FastOutSlowInEasing))
-      cheerScale.animateTo(1f, tween(140, easing = FastOutSlowInEasing))
+      cheerScale.snapTo(0.3f)
+      cheerScale.animateTo(1.2f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+      cheerScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
     }
   }
 
   Box(modifier = modifier.fillMaxSize()) {
-    // Dynamic animated cosmic background
     PlayfulCosmicBackground()
 
-    // Confetti explosion on correct answer
     ConfettiParticleExplosion(triggerKey = playState.confettiTrigger)
 
     Scaffold(
@@ -91,102 +97,132 @@ fun GamePlayScreen(
         )
       }
     ) { innerPadding ->
-      Column(
+      Box(
         modifier = Modifier
           .fillMaxSize()
-          .padding(innerPadding)
-          .verticalScroll(rememberScrollState())
-          .padding(horizontal = 14.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+          .padding(innerPadding),
+        contentAlignment = Alignment.TopCenter
       ) {
-        // Rocket Checkpoints Progress Bar
-        RocketProgressBar(
-          currentStep = playState.currentIndex,
-          totalSteps = playState.questions.size.coerceAtLeast(1)
-        )
-
-        // Mascot & Rocket interactive header
-        Row(
+        Column(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
+            .widthIn(max = 600.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .navigationBarsPadding(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-          CuteRocket(sizeDp = 50.dp)
-
-          // Mascot with expressive mood
-          CartoonAstronautMascot(
-            sizeDp = 95.dp,
-            mood = playState.mascotMood
+          // 1. Rocket Progress Checkpoint Bar
+          RocketProgressBar(
+            currentStep = playState.currentIndex,
+            totalSteps = playState.questions.size.coerceAtLeast(1)
           )
 
-          // Level badge emoji
-          Text(
-            text = when (playState.currentLevel) {
-              1 -> "🌕"
-              2 -> "🪐"
-              else -> "🌌"
-            },
-            fontSize = 36.sp
-          )
-        }
-
-        // Brief cheerful victory popup banner
-        AnimatedVisibility(
-          visible = playState.correctCheer != null,
-          enter = fadeIn() + scaleIn()
-        ) {
-          Box(
-            modifier = Modifier
-              .scale(cheerScale.value)
-              .shadow(8.dp, RoundedCornerShape(20.dp))
-              .clip(RoundedCornerShape(20.dp))
-              .background(Color(0xFF22C55E))
-              .border(2.5.dp, Color.White, RoundedCornerShape(20.dp))
-              .padding(horizontal = 24.dp, vertical = 8.dp)
-          ) {
-            Text(
-              text = playState.correctCheer ?: "",
-              fontSize = 26.sp,
-              fontWeight = FontWeight.Black,
-              color = Color.White
-            )
-          }
-        }
-
-        if (currentQuestion != null) {
-          // Visual Math Equation Card (Items e.g. 🌟🌟 + 🌟🌟🌟 = ؟)
-          VisualMathEquation(
-            question = currentQuestion,
-            showHint = playState.showHint,
-            onItemTapped = onItemTapped
-          )
-
-          Spacer(modifier = Modifier.height(6.dp))
-
-          // Big tactile answer buttons: 3 or 4 choices
+          // 2. Playful Mascot, Companion Rocket, & Combo Badge
           Row(
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            currentQuestion.options.forEachIndexed { index, optionVal ->
-              val buttonState = playState.buttonStates[optionVal] ?: AnswerButtonState.DEFAULT
-              KidAnswerButton(
-                value = optionVal,
-                index = index,
-                state = buttonState,
-                onClick = { onAnswerSelected(optionVal) }
+            CuteRocket(sizeDp = 50.dp)
+
+            CartoonAstronautMascot(
+              sizeDp = 95.dp,
+              mood = playState.mascotMood
+            )
+
+            // Dynamic Combo Streak Multiplier Badge (Encourages continuity & excitement)
+            if (playState.comboStreak >= 2) {
+              Box(
+                modifier = Modifier
+                  .shadow(6.dp, RoundedCornerShape(16.dp), spotColor = BrandAmber)
+                  .clip(RoundedCornerShape(16.dp))
+                  .background(Color(0xFFFFFBEB))
+                  .border(2.dp, BrandAmber, RoundedCornerShape(16.dp))
+                  .padding(horizontal = 10.dp, vertical = 6.dp)
+              ) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                  IllustratedStar(sizeDp = 18.dp, isFilled = true)
+                  Text(
+                    text = "سلسلة x${playState.comboStreak}",
+                    fontFamily = FredokaFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFFB45309)
+                  )
+                }
+              }
+            } else {
+              IllustratedPlanetOrb(
+                level = playState.currentLevel,
+                sizeDp = 44.dp
               )
             }
           }
-        }
 
-        Spacer(modifier = Modifier.height(20.dp))
+          // 3. Victory Feedback Banner
+          AnimatedVisibility(
+            visible = playState.correctCheer != null,
+            enter = fadeIn() + scaleIn()
+          ) {
+            Box(
+              modifier = Modifier
+                .scale(cheerScale.value)
+                .shadow(8.dp, RoundedCornerShape(22.dp), spotColor = BrandEmerald)
+                .clip(RoundedCornerShape(22.dp))
+                .background(BrandEmerald)
+                .border(2.5.dp, Color.White, RoundedCornerShape(22.dp))
+                .padding(horizontal = 26.dp, vertical = 8.dp)
+            ) {
+              Text(
+                text = playState.correctCheer ?: "",
+                fontFamily = CairoFontFamily,
+                fontWeight = FontWeight.Black,
+                fontSize = 22.sp,
+                color = Color.White
+              )
+            }
+          }
+
+          if (currentQuestion != null) {
+            // 4. Large Interactive Math Equation Card with Real Tangible Items
+            VisualMathEquation(
+              question = currentQuestion,
+              showHint = playState.showHint,
+              onItemTapped = onItemTapped
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 5. Large 3D Tactile Answer Buttons (Equally distributed)
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              currentQuestion.options.forEachIndexed { index, optionVal ->
+                val buttonState = playState.buttonStates[optionVal] ?: AnswerButtonState.DEFAULT
+                KidAnswerButton(
+                  value = optionVal,
+                  index = index,
+                  state = buttonState,
+                  onClick = { onAnswerSelected(optionVal) },
+                  modifier = Modifier.weight(1f)
+                )
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(24.dp))
+        }
       }
     }
   }

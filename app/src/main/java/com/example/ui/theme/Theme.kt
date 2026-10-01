@@ -3,25 +3,27 @@ package com.example.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
-private val CosmicColorScheme = darkColorScheme(
-  primary = StarGold,
-  onPrimary = Color(0xFF451A03),
-  secondary = PlanetCyan,
-  onSecondary = Color(0xFF0C4A6E),
-  tertiary = RocketOrange,
-  onTertiary = Color.White,
-  background = CosmicDeepPurple,
-  onBackground = Color.White,
-  surface = CosmicIndigo,
-  onSurface = Color.White
+private val ModernKidsColorScheme = lightColorScheme(
+  primary = BrandSkyBlue,
+  onPrimary = TextWhite,
+  primaryContainer = BrandSkyBlueBg,
+  onPrimaryContainer = BrandSkyBlueDark,
+  secondary = BrandAmber,
+  onSecondary = TextDark,
+  secondaryContainer = BrandAmberBg,
+  onSecondaryContainer = BrandAmberDark,
+  tertiary = BrandEmerald,
+  onTertiary = TextWhite,
+  background = CanvasBackground,
+  onBackground = TextDark,
+  surface = CanvasSurface,
+  onSurface = TextDark,
+  surfaceVariant = CanvasSurfaceSubtle,
+  onSurfaceVariant = TextMedium,
+  outline = CardBorder
 )
 
 @Composable
@@ -30,16 +32,8 @@ fun MyApplicationTheme(
   dynamicColor: Boolean = false,
   content: @Composable () -> Unit,
 ) {
-  val colorScheme = when {
-    dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-      val context = LocalContext.current
-      if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    }
-    else -> CosmicColorScheme
-  }
-
   MaterialTheme(
-    colorScheme = colorScheme,
+    colorScheme = ModernKidsColorScheme,
     typography = Typography,
     content = content
   )

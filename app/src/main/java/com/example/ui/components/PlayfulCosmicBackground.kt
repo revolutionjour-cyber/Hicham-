@@ -1,142 +1,100 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import kotlin.random.Random
 
-private data class StarParticle(
+private data class StaticDoodle(
   val xRatio: Float,
   val yRatio: Float,
-  val radius: Float,
-  val baseAlpha: Float,
-  val pulseSpeed: Int,
-  val color: Color
+  val size: Float,
+  val color: Color,
+  val isStar: Boolean
 )
 
 @Composable
 fun PlayfulCosmicBackground(modifier: Modifier = Modifier) {
-  val infiniteTransition = rememberInfiniteTransition(label = "stars")
-
-  // Gentle background drift & twinkle
-  val twinkleAnim by infiniteTransition.animateFloat(
-    initialValue = 0.4f,
-    targetValue = 1f,
-    animationSpec = infiniteRepeatable(
-      animation = tween(2400, easing = LinearEasing),
-      repeatMode = RepeatMode.Reverse
-    ),
-    label = "twinkle"
-  )
-
-  val floatAnim by infiniteTransition.animateFloat(
-    initialValue = -10f,
-    targetValue = 10f,
-    animationSpec = infiniteRepeatable(
-      animation = tween(4000, easing = LinearEasing),
-      repeatMode = RepeatMode.Reverse
-    ),
-    label = "float"
-  )
-
-  // Seeded stars for consistency
-  val stars = remember {
-    val rnd = Random(42)
-    val starColors = listOf(
-      Color(0xFFFFF9C4), // Soft Gold
-      Color(0xFFE1F5FE), // Soft Cyan
-      Color(0xFFFCE4EC), // Soft Pink
-      Color(0xFFFFFFFF), // Pure White
-      Color(0xFFB39DDB)  // Lavender
+  val doodles = remember {
+    val rnd = Random(2026)
+    val pastelColors = listOf(
+      Color(0x3038BDF8), // Soft Cyan
+      Color(0x30FBBF24), // Soft Gold
+      Color(0x30F472B6), // Soft Pink
+      Color(0x30A78BFA), // Soft Lavender
+      Color(0x3034D399)  // Soft Mint
     )
-    List(55) {
-      StarParticle(
+    List(18) {
+      StaticDoodle(
         xRatio = rnd.nextFloat(),
         yRatio = rnd.nextFloat(),
-        radius = rnd.nextFloat() * 3.5f + 1.5f,
-        baseAlpha = rnd.nextFloat() * 0.5f + 0.4f,
-        pulseSpeed = rnd.nextInt(1500, 3500),
-        color = starColors[rnd.nextInt(starColors.size)]
+        size = rnd.nextFloat() * 16f + 10f,
+        color = pastelColors[rnd.nextInt(pastelColors.size)],
+        isStar = rnd.nextBoolean()
       )
     }
   }
 
   Canvas(modifier = modifier.fillMaxSize()) {
-    val width = size.width
-    val height = size.height
+    val w = size.width
+    val h = size.height
 
-    // Deep vibrant cosmic sky gradient
+    // 1. Fresh uplifting modern sky gradient
     drawRect(
       brush = Brush.verticalGradient(
         colors = listOf(
-          Color(0xFF13092D), // Deep Midnight Purple
-          Color(0xFF1E1045), // Royal Indigo
-          Color(0xFF281158), // Rich Violet
-          Color(0xFF180A38)  // Dark Star Base
+          Color(0xFFE0F2FE), // Airy Pale Cyan
+          Color(0xFFF0FDF4), // Fresh Mint hint
+          Color(0xFFFAF5FF), // Soft Lilac
+          Color(0xFFF8FAFC)  // Clean Base
         )
       )
     )
 
-    // Soft glowing nebula clouds
+    // 2. Soft organic background blobs
     drawCircle(
-      brush = Brush.radialGradient(
-        colors = listOf(Color(0x35E040FB), Color(0x00E040FB)),
-        center = Offset(width * 0.2f, height * 0.25f + floatAnim),
-        radius = width * 0.6f
-      ),
-      center = Offset(width * 0.2f, height * 0.25f + floatAnim),
-      radius = width * 0.6f
+      color = Color(0x1838BDF8),
+      radius = w * 0.55f,
+      center = Offset(w * 0.15f, h * 0.2f)
+    )
+    drawCircle(
+      color = Color(0x18FBBF24),
+      radius = w * 0.45f,
+      center = Offset(w * 0.85f, h * 0.45f)
+    )
+    drawCircle(
+      color = Color(0x15A78BFA),
+      radius = w * 0.6f,
+      center = Offset(w * 0.5f, h * 0.85f)
     )
 
-    drawCircle(
-      brush = Brush.radialGradient(
-        colors = listOf(Color(0x3000E5FF), Color(0x0000E5FF)),
-        center = Offset(width * 0.85f, height * 0.7f - floatAnim),
-        radius = width * 0.5f
-      ),
-      center = Offset(width * 0.85f, height * 0.7f - floatAnim),
-      radius = width * 0.5f
-    )
+    // 3. Subtle floating doodles (Zero CPU overhead, instantaneous rendering)
+    doodles.forEach { doodle ->
+      val x = doodle.xRatio * w
+      val y = doodle.yRatio * h
 
-    // Draw twinkling stars
-    stars.forEachIndexed { idx, star ->
-      val x = star.xRatio * width
-      val y = (star.yRatio * height + if (idx % 2 == 0) floatAnim * 0.5f else -floatAnim * 0.5f) % height
-      val alphaMultiplier = if (idx % 3 == 0) twinkleAnim else (1.4f - twinkleAnim)
-      val finalAlpha = (star.baseAlpha * alphaMultiplier).coerceIn(0.15f, 1f)
-
-      drawCircle(
-        color = star.color.copy(alpha = finalAlpha),
-        radius = star.radius,
-        center = Offset(x, y)
-      )
-
-      // Sparkle cross on larger stars
-      if (star.radius > 3.8f && finalAlpha > 0.6f) {
-        val crossLen = star.radius * 2.2f
-        drawLine(
-          color = star.color.copy(alpha = finalAlpha * 0.7f),
-          start = Offset(x - crossLen, y),
-          end = Offset(x + crossLen, y),
-          strokeWidth = 1.2f
-        )
-        drawLine(
-          color = star.color.copy(alpha = finalAlpha * 0.7f),
-          start = Offset(x, y - crossLen),
-          end = Offset(x, y + crossLen),
-          strokeWidth = 1.2f
+      if (doodle.isStar) {
+        val r = doodle.size
+        val starPath = Path().apply {
+          moveTo(x, y - r)
+          cubicTo(x, y - r * 0.3f, x + r * 0.3f, y, x + r, y)
+          cubicTo(x + r * 0.3f, y, x, y + r * 0.3f, x, y + r)
+          cubicTo(x, y + r * 0.3f, x - r * 0.3f, y, x - r, y)
+          cubicTo(x - r * 0.3f, y, x, y - r * 0.3f, x, y - r)
+          close()
+        }
+        drawPath(starPath, color = doodle.color)
+      } else {
+        drawCircle(
+          color = doodle.color,
+          radius = doodle.size * 0.5f,
+          center = Offset(x, y)
         )
       }
     }

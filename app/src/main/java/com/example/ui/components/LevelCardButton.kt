@@ -1,12 +1,13 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,20 +20,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import com.example.ui.theme.BrandAmber
+import com.example.ui.theme.BrandCoral
+import com.example.ui.theme.BrandEmerald
+import com.example.ui.theme.BrandPurple
+import com.example.ui.theme.BrandSkyBlue
+import com.example.ui.theme.CairoFontFamily
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.FredokaFontFamily
+import com.example.ui.theme.TextDark
+import com.example.ui.theme.TextMuted
 
 @Composable
 fun LevelCardButton(
@@ -42,47 +51,65 @@ fun LevelCardButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  val scale = remember { Animatable(1f) }
-  val scope = rememberCoroutineScope()
+  val interactionSource = remember { MutableInteractionSource() }
+  val isPressed by interactionSource.collectIsPressedAsState()
 
-  // Gradient themes per level
-  val backgroundBrush = when (level) {
-    1 -> Brush.horizontalGradient(
-      colors = listOf(Color(0xFF0284C7), Color(0xFF0EA5E9), Color(0xFF38BDF8))
+  val scale by animateFloatAsState(
+    targetValue = if (isPressed) 0.96f else 1f,
+    animationSpec = spring(
+      dampingRatio = Spring.DampingRatioMediumBouncy,
+      stiffness = Spring.StiffnessMedium
+    ),
+    label = "level_card_scale"
+  )
+
+  // Level theme metadata
+  val (primaryColor, titleAr, subtitleAr, rangeAr) = when (level) {
+    1 -> listOf(
+      BrandSkyBlue,
+      "عالم الأعداد الأولى",
+      "العد والجمع البسيط",
+      "١ - ٥"
     )
-    2 -> Brush.horizontalGradient(
-      colors = listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFFBBF24))
+    2 -> listOf(
+      BrandCoral,
+      "مغامرة الجمع والطرح",
+      "أرقام حتى عشرة",
+      "١ - ١٠"
     )
-    else -> Brush.horizontalGradient(
-      colors = listOf(Color(0xFF7E22CE), Color(0xFFA855F7), Color(0xFFEC4899))
+    else -> listOf(
+      BrandPurple,
+      "تحدي أبطال الفضاء",
+      "مسائل كبرى حتى عشرين",
+      "١ - ٢٠"
     )
   }
+
+  val accentColor = primaryColor as Color
 
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(115.dp)
-      .scale(scale.value)
-      .shadow(10.dp, RoundedCornerShape(26.dp))
+      .height(116.dp)
+      .scale(scale)
+      .shadow(
+        elevation = if (isUnlocked) 8.dp else 2.dp,
+        shape = RoundedCornerShape(26.dp),
+        spotColor = if (isUnlocked) accentColor.copy(alpha = 0.4f) else Color(0x20000000)
+      )
       .clip(RoundedCornerShape(26.dp))
-      .background(backgroundBrush)
+      .background(Color.White)
       .border(
-        3.5.dp,
-        if (isUnlocked) Color.White.copy(alpha = 0.9f) else Color(0x60FFFFFF),
-        RoundedCornerShape(26.dp)
+        width = if (isUnlocked) 2.5.dp else 1.5.dp,
+        color = if (isUnlocked) accentColor.copy(alpha = 0.45f) else CardBorder,
+        shape = RoundedCornerShape(26.dp)
       )
       .clickable(
-        interactionSource = remember { MutableInteractionSource() },
+        interactionSource = interactionSource,
         indication = null,
-        onClick = {
-          scope.launch {
-            scale.animateTo(0.94f, tween(80, easing = FastOutSlowInEasing))
-            scale.animateTo(1f, tween(120, easing = FastOutSlowInEasing))
-            onClick()
-          }
-        }
+        onClick = onClick
       )
-      .padding(horizontal = 18.dp, vertical = 10.dp)
+      .padding(horizontal = 16.dp, vertical = 12.dp)
       .testTag("level_button_$level"),
     contentAlignment = Alignment.Center
   ) {
@@ -91,110 +118,104 @@ fun LevelCardButton(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      // Left: Giant Level Number
+      // 1. Giant 3D Number Disc (Left)
       Box(
         modifier = Modifier
-          .size(76.dp)
-          .shadow(6.dp, CircleShape)
+          .size(72.dp)
+          .shadow(4.dp, CircleShape, spotColor = accentColor)
           .clip(CircleShape)
-          .background(Color.White)
+          .background(if (isUnlocked) accentColor else Color(0xFFF1F5F9))
           .border(
             3.dp,
-            when (level) {
-              1 -> Color(0xFF0284C7)
-              2 -> Color(0xFFEA580C)
-              else -> Color(0xFF7E22CE)
-            },
+            if (isUnlocked) accentColor.copy(alpha = 0.3f) else CardBorder,
             CircleShape
           ),
         contentAlignment = Alignment.Center
       ) {
         Text(
           text = "$level",
-          fontSize = 46.sp,
-          fontWeight = FontWeight.Black,
-          color = when (level) {
-            1 -> Color(0xFF0284C7)
-            2 -> Color(0xFFEA580C)
-            else -> Color(0xFF7E22CE)
-          }
+          fontFamily = FredokaFontFamily,
+          fontWeight = FontWeight.Bold,
+          fontSize = 42.sp,
+          color = if (isUnlocked) Color.White else TextMuted
         )
       }
 
-      // Center: Level Cartoon Drawing & Stars
+      // 2. Middle Details (Title, Subtitle, Illustrated Stars)
       Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = Modifier
+          .weight(1f)
+          .padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.Start
       ) {
-        // Visual theme badge
+        Text(
+          text = titleAr as String,
+          fontFamily = CairoFontFamily,
+          fontWeight = FontWeight.Bold,
+          fontSize = 17.sp,
+          color = if (isUnlocked) TextDark else TextMuted
+        )
+
+        // Subtitle + Range Badge
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(6.dp)
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          when (level) {
-            1 -> {
-              Text(text = "🚀", fontSize = 28.sp)
-              Text(
-                text = "١ - ٥",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White
-              )
-            }
-            2 -> {
-              Text(text = "🪐", fontSize = 28.sp)
-              Text(
-                text = "١ - ١٠",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White
-              )
-            }
-            3 -> {
-              Text(text = "🌌", fontSize = 28.sp)
-              Text(
-                text = "١ - ٢٠",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White
-              )
-            }
+          Box(
+            modifier = Modifier
+              .clip(RoundedCornerShape(10.dp))
+              .background(if (isUnlocked) accentColor.copy(alpha = 0.12f) else Color(0xFFF1F5F9))
+              .padding(horizontal = 8.dp, vertical = 2.dp)
+          ) {
+            Text(
+              text = rangeAr as String,
+              fontFamily = FredokaFontFamily,
+              fontWeight = FontWeight.Bold,
+              fontSize = 13.sp,
+              color = if (isUnlocked) accentColor else TextMuted
+            )
           }
+
+          Text(
+            text = subtitleAr as String,
+            fontFamily = CairoFontFamily,
+            fontSize = 13.sp,
+            color = TextMuted
+          )
         }
 
-        // Stars Earned Rating (⭐⭐⭐)
+        // Custom Illustrated Stars (Zero Unicode emoji)
         Row(
-          horizontalArrangement = Arrangement.spacedBy(4.dp)
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically
         ) {
           for (starIndex in 1..3) {
             val isEarned = isUnlocked && starIndex <= earnedStars
-            Text(
-              text = if (isEarned) "⭐" else "☆",
-              fontSize = 20.sp,
-              color = if (isEarned) Color(0xFFFDE047) else Color(0x80FFFFFF)
-            )
+            IllustratedStar(isFilled = isEarned, sizeDp = 20.dp)
           }
         }
       }
 
-      // Right: Level Planet Icon or Lock
+      // 3. Right: Level Planet Vector or Illustrated Lock
       Box(
-        modifier = Modifier.size(72.dp),
+        modifier = Modifier.size(68.dp),
         contentAlignment = Alignment.Center
       ) {
         if (!isUnlocked) {
-          // Cute lock badge
           Box(
             modifier = Modifier
-              .size(54.dp)
+              .size(50.dp)
+              .shadow(2.dp, CircleShape)
               .clip(CircleShape)
-              .background(Color(0x60000000)),
+              .background(Color(0xFFF8FAFC))
+              .border(1.5.dp, CardBorder, CircleShape),
             contentAlignment = Alignment.Center
           ) {
-            Text(text = "🔒", fontSize = 28.sp)
+            IllustratedLock(sizeDp = 26.dp)
           }
         } else {
-          CartoonPlanet(level = level, sizeDp = 70.dp)
+          IllustratedPlanetOrb(level = level, sizeDp = 58.dp)
         }
       }
     }

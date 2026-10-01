@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.asStateFlow
 data class KidGameState(
   val totalStars: Int = 0,
   val totalCoins: Int = 0,
+  val correctCount: Int = 0,
+  val streakDays: Int = 3,
+  val playerName: String = "بطل الرياضيات",
+  val selectedAvatar: Int = 0,
   val unlockedLevels: Set<Int> = setOf(1),
   val levelStars: Map<Int, Int> = mapOf(1 to 0, 2 to 0, 3 to 0)
 )
@@ -23,6 +27,10 @@ class KidGameRepository(context: Context) {
   private fun loadGameState(): KidGameState {
     val stars = prefs.getInt("total_stars", 0)
     val coins = prefs.getInt("total_coins", 0)
+    val correct = prefs.getInt("correct_count", 0)
+    val streak = prefs.getInt("streak_days", 3)
+    val name = prefs.getString("player_name", "بطل الرياضيات") ?: "بطل الرياضيات"
+    val avatar = prefs.getInt("selected_avatar", 0)
     val unlocked = prefs.getStringSet("unlocked_levels", setOf("1"))
       ?.mapNotNull { it.toIntOrNull() }?.toSet() ?: setOf(1)
     val lvl1 = prefs.getInt("stars_level_1", 0)
@@ -32,6 +40,10 @@ class KidGameRepository(context: Context) {
     return KidGameState(
       totalStars = stars,
       totalCoins = coins,
+      correctCount = correct,
+      streakDays = streak,
+      playerName = name,
+      selectedAvatar = avatar,
       unlockedLevels = if (unlocked.isEmpty()) setOf(1) else unlocked,
       levelStars = mapOf(1 to lvl1, 2 to lvl2, 3 to lvl3)
     )
@@ -41,15 +53,18 @@ class KidGameRepository(context: Context) {
     val current = _gameState.value
     val newStars = current.totalStars + earnedStars
     val newCoins = current.totalCoins + earnedCoins
+    val newCorrect = current.correctCount + 1
 
     prefs.edit()
       .putInt("total_stars", newStars)
       .putInt("total_coins", newCoins)
+      .putInt("correct_count", newCorrect)
       .apply()
 
     _gameState.value = current.copy(
       totalStars = newStars,
-      totalCoins = newCoins
+      totalCoins = newCoins,
+      correctCount = newCorrect
     )
   }
 
@@ -74,5 +89,21 @@ class KidGameRepository(context: Context) {
       unlockedLevels = updatedUnlocked,
       levelStars = updatedStarsMap
     )
+  }
+
+  fun updatePlayerProfile(name: String, avatarIndex: Int) {
+    prefs.edit()
+      .putString("player_name", name)
+      .putInt("selected_avatar", avatarIndex)
+      .apply()
+    _gameState.value = _gameState.value.copy(
+      playerName = name,
+      selectedAvatar = avatarIndex
+    )
+  }
+
+  fun resetAllProgress() {
+    prefs.edit().clear().apply()
+    _gameState.value = KidGameState()
   }
 }

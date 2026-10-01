@@ -3,6 +3,12 @@ package com.example.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
@@ -16,13 +22,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -32,12 +42,25 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.MathOperator
 import com.example.model.MathQuestion
+import com.example.model.TangibleItemType
+import com.example.ui.theme.BrandAmber
+import com.example.ui.theme.BrandEmerald
+import com.example.ui.theme.BrandRose
+import com.example.ui.theme.BrandSkyBlue
+import com.example.ui.theme.BrandSkyBlueBg
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.FredokaFontFamily
+import com.example.ui.theme.CairoFontFamily
+import com.example.ui.theme.TextDark
+import com.example.ui.theme.TextMuted
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -51,132 +74,205 @@ fun VisualMathEquation(
   Column(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 4.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
-    // Top Card: Visual Items Box (e.g. ⭐⭐ + ⭐⭐⭐)
+    // 1. MOTIVATING STORY CHALLENGE BANNER
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .shadow(10.dp, RoundedCornerShape(28.dp))
-        .clip(RoundedCornerShape(28.dp))
-        .background(
-          brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF2E1065), Color(0xFF1E1B4B))
-          )
-        )
-        .border(3.dp, Color(0xFF818CF8).copy(alpha = 0.6f), RoundedCornerShape(28.dp))
-        .padding(horizontal = 16.dp, vertical = 20.dp),
+        .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0x2038BDF8))
+        .clip(RoundedCornerShape(20.dp))
+        .background(BrandSkyBlueBg)
+        .border(1.5.dp, BrandSkyBlue.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+        .padding(horizontal = 16.dp, vertical = 10.dp),
       contentAlignment = Alignment.Center
     ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        // Group A: First Count of Items
-        ItemGroupCard(
-          count = question.firstCount,
-          emoji = question.item.emoji,
-          startIndex = 1,
-          showHint = showHint,
-          onItemTapped = onItemTapped
-        )
+      Text(
+        text = question.promptAr,
+        fontFamily = CairoFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        color = BrandSkyBlue
+      )
+    }
 
-        // Math Operator (+ or -)
-        Box(
-          modifier = Modifier
-            .padding(horizontal = 10.dp)
-            .size(46.dp)
-            .shadow(4.dp, CircleShape)
-            .clip(CircleShape)
-            .background(
-              brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFF59E0B), Color(0xFFD97706))
-              )
+    // 2. TACTILE COUNTING TRAY (Pedagogically accurate for kids)
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .shadow(8.dp, RoundedCornerShape(32.dp), spotColor = Color(0x3038BDF8))
+        .clip(RoundedCornerShape(32.dp))
+        .background(Color.White)
+        .border(2.dp, CardBorder, RoundedCornerShape(32.dp))
+        .padding(horizontal = 14.dp, vertical = 18.dp),
+      contentAlignment = Alignment.Center
+    ) {
+      CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        if (question.operator == MathOperator.PLUS) {
+          // --- ADDITION: Group A + Group B ---
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            CountingTrayGroup(
+              count = question.firstCount,
+              itemType = question.item,
+              startIndex = 1,
+              showHint = showHint,
+              onItemTapped = onItemTapped
             )
-            .border(2.dp, Color.White, CircleShape),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            text = question.operator.symbol,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White
-          )
-        }
 
-        // Group B: Second Count of Items
-        ItemGroupCard(
-          count = question.secondCount,
-          emoji = question.item.emoji,
-          startIndex = if (question.operator == MathOperator.PLUS) question.firstCount + 1 else 1,
-          showHint = showHint,
-          isSubtracted = question.operator == MathOperator.MINUS,
-          onItemTapped = onItemTapped
-        )
+            // Operator Badge (+)
+            Box(
+              modifier = Modifier
+                .padding(horizontal = 10.dp)
+                .size(46.dp)
+                .shadow(4.dp, CircleShape, spotColor = BrandAmber)
+                .clip(CircleShape)
+                .background(
+                  Brush.verticalGradient(
+                    listOf(BrandAmber, Color(0xFFD97706))
+                  )
+                )
+                .border(2.dp, Color.White, CircleShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Text(
+                text = "+",
+                fontFamily = FredokaFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                color = Color.White
+              )
+            }
+
+            CountingTrayGroup(
+              count = question.secondCount,
+              itemType = question.item,
+              startIndex = question.firstCount + 1,
+              showHint = showHint,
+              onItemTapped = onItemTapped
+            )
+          }
+        } else {
+          // --- SUBTRACTION: Total items with subtracted items crossed out ---
+          val totalItems = question.firstCount
+          val subtractedCount = question.secondCount
+          val remainingCount = totalItems - subtractedCount
+
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFFF8FAFC))
+                .border(1.5.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+              FlowRow(
+                horizontalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Center,
+                maxItemsInEachRow = 5
+              ) {
+                // First: uncrossed remaining items
+                for (i in 0 until remainingCount) {
+                  TangibleItemCell(
+                    itemType = question.item,
+                    hintNumber = i + 1,
+                    showHint = showHint,
+                    isSubtracted = false,
+                    onTap = onItemTapped
+                  )
+                }
+                // Next: crossed-out subtracted items
+                for (i in 0 until subtractedCount) {
+                  TangibleItemCell(
+                    itemType = question.item,
+                    hintNumber = 0,
+                    showHint = false,
+                    isSubtracted = true,
+                    onTap = onItemTapped
+                  )
+                }
+              }
+            }
+          }
+        }
       }
     }
 
-    // Lower Card: Big Numeric Equation (e.g. 2 + 3 = ?)
-    Box(
-      modifier = Modifier
-        .shadow(6.dp, RoundedCornerShape(20.dp))
-        .clip(RoundedCornerShape(20.dp))
-        .background(
-          brush = Brush.horizontalGradient(
-            colors = listOf(Color(0xFF4338CA), Color(0xFF6366F1))
-          )
-        )
-        .border(2.5.dp, Color.White.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
-        .padding(horizontal = 28.dp, vertical = 10.dp)
-        .testTag("numeric_equation"),
-      contentAlignment = Alignment.Center
-    ) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    // 3. CRISP NUMERIC EQUATION (Always left-to-right math: 3 + 2 = [ ؟ ])
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+      Box(
+        modifier = Modifier
+          .shadow(6.dp, RoundedCornerShape(26.dp), spotColor = Color(0x25000000))
+          .clip(RoundedCornerShape(26.dp))
+          .background(Color.White)
+          .border(2.dp, CardBorder, RoundedCornerShape(26.dp))
+          .padding(horizontal = 24.dp, vertical = 8.dp)
+          .testTag("numeric_equation"),
+        contentAlignment = Alignment.Center
       ) {
-        Text(
-          text = "${question.firstCount}",
-          fontSize = 38.sp,
-          fontWeight = FontWeight.Black,
-          color = Color(0xFFFDE047)
-        )
-        Text(
-          text = question.operator.symbol,
-          fontSize = 34.sp,
-          fontWeight = FontWeight.Black,
-          color = Color.White
-        )
-        Text(
-          text = "${question.secondCount}",
-          fontSize = 38.sp,
-          fontWeight = FontWeight.Black,
-          color = Color(0xFFFDE047)
-        )
-        Text(
-          text = "=",
-          fontSize = 36.sp,
-          fontWeight = FontWeight.Black,
-          color = Color.White
-        )
-        // Question Mark with pulse
-        Box(
-          modifier = Modifier
-            .size(46.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFEC4899))
-            .border(2.dp, Color.White, RoundedCornerShape(12.dp)),
-          contentAlignment = Alignment.Center
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
           Text(
-            text = "؟",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White
+            text = "${question.firstCount}",
+            fontFamily = FredokaFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 38.sp,
+            color = BrandSkyBlue
           )
+          Text(
+            text = question.operator.symbol,
+            fontFamily = FredokaFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 32.sp,
+            color = TextDark
+          )
+          Text(
+            text = "${question.secondCount}",
+            fontFamily = FredokaFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 38.sp,
+            color = BrandSkyBlue
+          )
+          Text(
+            text = "=",
+            fontFamily = FredokaFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 32.sp,
+            color = TextDark
+          )
+
+          // Missing Answer Slot
+          Box(
+            modifier = Modifier
+              .size(48.dp)
+              .shadow(4.dp, RoundedCornerShape(16.dp), spotColor = BrandRose)
+              .clip(RoundedCornerShape(16.dp))
+              .background(
+                Brush.verticalGradient(
+                  listOf(BrandRose, Color(0xFFE11D48))
+                )
+              )
+              .border(2.dp, Color.White, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = "؟",
+              fontFamily = FredokaFontFamily,
+              fontWeight = FontWeight.Bold,
+              fontSize = 30.sp,
+              color = Color.White
+            )
+          }
         }
       }
     }
@@ -185,18 +281,18 @@ fun VisualMathEquation(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ItemGroupCard(
+private fun CountingTrayGroup(
   count: Int,
-  emoji: String,
+  itemType: TangibleItemType,
   startIndex: Int,
   showHint: Boolean,
-  isSubtracted: Boolean = false,
   onItemTapped: () -> Unit
 ) {
   Box(
     modifier = Modifier
-      .clip(RoundedCornerShape(16.dp))
-      .background(Color(0x356366F1))
+      .clip(RoundedCornerShape(24.dp))
+      .background(Color(0xFFF8FAFC))
+      .border(1.5.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
       .padding(horizontal = 8.dp, vertical = 6.dp)
   ) {
     FlowRow(
@@ -206,11 +302,11 @@ private fun ItemGroupCard(
     ) {
       for (i in 0 until count) {
         val itemNumber = startIndex + i
-        InteractiveItem(
-          emoji = emoji,
+        TangibleItemCell(
+          itemType = itemType,
           hintNumber = itemNumber,
           showHint = showHint,
-          isSubtracted = isSubtracted,
+          isSubtracted = false,
           onTap = onItemTapped
         )
       }
@@ -219,8 +315,8 @@ private fun ItemGroupCard(
 }
 
 @Composable
-private fun InteractiveItem(
-  emoji: String,
+private fun TangibleItemCell(
+  itemType: TangibleItemType,
   hintNumber: Int,
   showHint: Boolean,
   isSubtracted: Boolean,
@@ -231,7 +327,7 @@ private fun InteractiveItem(
 
   Box(
     modifier = Modifier
-      .padding(3.dp)
+      .padding(4.dp)
       .scale(scale.value)
       .clickable(
         interactionSource = remember { MutableInteractionSource() },
@@ -239,45 +335,41 @@ private fun InteractiveItem(
         onClick = {
           onTap()
           scope.launch {
-            scale.animateTo(1.4f, tween(100, easing = FastOutSlowInEasing))
-            scale.animateTo(1f, tween(120, easing = FastOutSlowInEasing))
+            scale.animateTo(1.35f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+            scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioLowBouncy))
           }
         }
       ),
     contentAlignment = Alignment.Center
   ) {
-    Text(
-      text = emoji,
-      fontSize = 34.sp,
-      modifier = Modifier.padding(bottom = if (showHint) 10.dp else 0.dp)
+    IllustratedItemIcon(
+      itemType = itemType,
+      sizeDp = 44.dp,
+      modifier = Modifier.padding(bottom = if (showHint && hintNumber > 0) 10.dp else 0.dp)
     )
 
-    // Subtraction strike visual
     if (isSubtracted) {
-      Text(
-        text = "❌",
-        fontSize = 20.sp,
+      IllustratedCross(
+        sizeDp = 26.dp,
         modifier = Modifier.align(Alignment.Center)
       )
     }
 
-    // Visual hint: numbered dot so child can count 1, 2, 3...
-    AnimatedVisibility(
-      visible = showHint,
-      enter = fadeIn() + scaleIn(),
-      modifier = Modifier.align(Alignment.BottomCenter)
-    ) {
+    if (showHint && hintNumber > 0) {
       Box(
         modifier = Modifier
-          .size(20.dp)
+          .align(Alignment.BottomCenter)
+          .size(22.dp)
+          .shadow(3.dp, CircleShape)
           .clip(CircleShape)
-          .background(Color(0xFF22C55E))
+          .background(BrandEmerald)
           .border(1.5.dp, Color.White, CircleShape),
         contentAlignment = Alignment.Center
       ) {
         Text(
           text = "$hintNumber",
-          fontSize = 11.sp,
+          fontFamily = FredokaFontFamily,
+          fontSize = 12.sp,
           fontWeight = FontWeight.Bold,
           color = Color.White
         )
