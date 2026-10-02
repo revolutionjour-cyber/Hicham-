@@ -1,16 +1,21 @@
 package com.example.ui.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -148,6 +155,8 @@ fun ChalkboardSlate(
 
 /**
  * Dashed Chalk Target Slot on the board where the answer must be dropped.
+ * Upgraded with animated dashed chalk border, breathing halo glow, bouncing 3D question mark,
+ * twinkling magic sparkles, and magnetic suction reaction when hovered!
  */
 @Composable
 fun ChalkTargetDropSlot(
@@ -156,56 +165,210 @@ fun ChalkTargetDropSlot(
   isWrong: Boolean = false,
   modifier: Modifier = Modifier
 ) {
-  val infiniteTransition = rememberInfiniteTransition(label = "slot_pulse")
-  val pulseAlpha by infiniteTransition.animateFloat(
-    initialValue = 0.4f,
-    targetValue = 0.9f,
+  val infiniteTransition = rememberInfiniteTransition(label = "slot_effects")
+
+  // 1. Breathing Glow Alpha & Scale
+  val breathingAlpha by infiniteTransition.animateFloat(
+    initialValue = 0.35f,
+    targetValue = 0.85f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(1200, easing = FastOutSlowInEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "breathing_alpha"
+  )
+
+  // 2. Animated Dashed Chalk Phase
+  val dashPhase by infiniteTransition.animateFloat(
+    initialValue = 0f,
+    targetValue = 40f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(2400, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart
+    ),
+    label = "dash_phase"
+  )
+
+  // 3. Bouncing Question Mark Vertical Bobbing
+  val questionBobY by infiniteTransition.animateFloat(
+    initialValue = -3.5f,
+    targetValue = 3.5f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(900, easing = FastOutSlowInEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "question_bob"
+  )
+
+  // 4. Subtle Question Mark Rotation Wobble
+  val questionRot by infiniteTransition.animateFloat(
+    initialValue = -5f,
+    targetValue = 5f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(1100, easing = FastOutSlowInEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "question_rot"
+  )
+
+  // 5. Sparkle Star Pulse
+  val sparkleScale by infiniteTransition.animateFloat(
+    initialValue = 0.6f,
+    targetValue = 1.25f,
     animationSpec = infiniteRepeatable(
       animation = tween(800, easing = FastOutSlowInEasing),
       repeatMode = RepeatMode.Reverse
     ),
-    label = "pulse_alpha"
+    label = "sparkle_scale"
   )
 
-  val borderColor = when {
-    isWrong -> Color(0xFFF43F5E) // Red chalk border on error
-    isHovered -> Color(0xFFFEF08A)
-    else -> Color(0xFFE2E8F0).copy(alpha = pulseAlpha)
+  // Magnetic Suction Scale when hovered with draggable tile
+  val suctionScale by animateFloatAsState(
+    targetValue = when {
+      isHovered -> 1.14f
+      isWrong -> 1.05f
+      currentValue != null -> 1.06f
+      else -> 1.0f
+    },
+    animationSpec = spring(
+      dampingRatio = Spring.DampingRatioMediumBouncy,
+      stiffness = Spring.StiffnessMedium
+    ),
+    label = "suction_scale"
+  )
+
+  val haloColor = when {
+    isWrong -> Color(0x60F43F5E)
+    isHovered -> Color(0x7034D399) // Mint glow
+    currentValue != null -> Color(0x60FEF08A)
+    else -> Color(0x40FDE047).copy(alpha = breathingAlpha)
   }
 
   val chalkColor = when {
-    isWrong -> Color(0xFFFB7185) // Reddish chalk on error
-    else -> Color(0xFFFEF08A)    // Glowing yellow chalk
+    isWrong -> Color(0xFFFB7185)
+    isHovered -> Color(0xFF6EE7B7)
+    currentValue != null -> Color(0xFFFEF08A)
+    else -> Color(0xFFFEF08A)
   }
 
-  val bgColor = when {
-    isWrong -> Color(0x30F43F5E)
-    isHovered -> Color(0x25FDE047)
-    else -> Color(0x10FFFFFF)
+  val borderColor = when {
+    isWrong -> Color(0xFFF43F5E)
+    isHovered -> Color(0xFF34D399)
+    currentValue != null -> Color(0xFFFDE047)
+    else -> Color(0xFFE2E8F0)
   }
 
   Box(
     modifier = modifier
-      .size(width = 68.dp, height = 62.dp)
-      .background(bgColor, shape = RoundedCornerShape(10.dp))
-      .border(
-        width = if (isHovered || isWrong) 2.5.dp else 1.8.dp,
-        color = borderColor,
-        shape = RoundedCornerShape(10.dp)
-      ),
+      .size(width = 72.dp, height = 66.dp)
+      .scale(suctionScale),
     contentAlignment = Alignment.Center
   ) {
+    // 1. Ambient Breathing Halo Glow Layer
+    Canvas(modifier = Modifier.fillMaxSize()) {
+      val w = size.width
+      val h = size.height
+      drawRoundRect(
+        brush = Brush.radialGradient(
+          colors = listOf(haloColor, Color.Transparent),
+          center = Offset(w * 0.5f, h * 0.5f),
+          radius = w * 0.75f
+        ),
+        size = size,
+        cornerRadius = CornerRadius(18.dp.toPx(), 18.dp.toPx())
+      )
+    }
+
+    // 2. Translucent Slate Inset Background
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(3.dp)
+        .background(
+          color = when {
+            isWrong -> Color(0x35F43F5E)
+            isHovered -> Color(0x3034D399)
+            currentValue != null -> Color(0x22FEF08A)
+            else -> Color(0x18FFFFFF)
+          },
+          shape = RoundedCornerShape(12.dp)
+        )
+    )
+
+    // 3. Hand-drawn Dashed Chalk Border Canvas
+    Canvas(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(3.dp)
+    ) {
+      val strokeWidth = if (isHovered || isWrong) 3.5.dp.toPx() else 2.2.dp.toPx()
+      val dashInterval = if (currentValue != null) null else PathEffect.dashPathEffect(
+        floatArrayOf(14.dp.toPx(), 8.dp.toPx()),
+        dashPhase
+      )
+
+      drawRoundRect(
+        color = borderColor,
+        size = Size(size.width, size.height),
+        cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+        style = Stroke(
+          width = strokeWidth,
+          pathEffect = dashInterval,
+          cap = StrokeCap.Round
+        )
+      )
+    }
+
+    // 4. Magic Corner Sparkles (when waiting for answer)
+    if (currentValue == null && !isHovered) {
+      // Top-Right Twinkling Star
+      Canvas(
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+          .offset(x = 2.dp, y = (-2).dp)
+          .size(10.dp)
+          .scale(sparkleScale)
+      ) {
+        drawCircle(color = Color(0xFFFEF08A), radius = size.minDimension * 0.45f)
+      }
+
+      // Bottom-Left Twinkling Star
+      Canvas(
+        modifier = Modifier
+          .align(Alignment.BottomStart)
+          .offset(x = (-2).dp, y = 2.dp)
+          .size(8.dp)
+          .scale(sparkleScale * 0.85f)
+      ) {
+        drawCircle(color = Color(0xFF6EE7B7), radius = size.minDimension * 0.45f)
+      }
+    }
+
+    // 5. Center Content: Either the Answer or the Bouncing 3D Question Mark
     if (currentValue != null) {
       ChalkText(
         text = "$currentValue",
-        fontSize = 36.sp,
+        fontSize = 38.sp,
         color = chalkColor
       )
     } else {
-      ChalkText(
+      // Bouncing Curious 3D Question Mark
+      Text(
         text = "؟",
-        fontSize = 32.sp,
-        color = Color(0xFFCBD5E1).copy(alpha = 0.7f)
+        fontFamily = FredokaFontFamily,
+        fontWeight = FontWeight.Black,
+        fontSize = 34.sp,
+        color = if (isHovered) Color(0xFF34D399) else Color(0xFFFEF08A),
+        style = TextStyle(
+          shadow = Shadow(
+            color = Color(0x80000000),
+            offset = Offset(2f, 2f),
+            blurRadius = 4f
+          )
+        ),
+        modifier = Modifier
+          .offset(y = questionBobY.dp)
+          .rotate(questionRot)
       )
     }
   }

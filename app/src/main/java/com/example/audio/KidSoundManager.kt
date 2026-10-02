@@ -2,8 +2,9 @@ package com.example.audio
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFormat
 import android.media.AudioManager
-import android.media.SoundPool
+import android.media.AudioTrack
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -15,10 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.exp
@@ -26,11 +23,8 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * KidSoundManager: Fully self-contained sound engine.
- * Generates and plays rich, encouraging audio without requiring external raw files:
- * 1. Native SoundPool with custom synthesized musical chimes (0ms latency).
- * 2. ToneGenerator backup via STREAM_MUSIC at maximum gain.
- * 3. TextToSpeech for warm Arabic voice praises ("أحسنت يا بطل!", "حاول ثانية!").
+ * KidSoundManager: Fully self-contained native PCM audio engine.
+ * Plays direct PCM audio via AudioTrack with 0ms latency without invoking MediaCodec.
  */
 class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListener {
   private val sampleRate = 22050
@@ -41,21 +35,29 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
 
   private var isAppActive = true
 
-  // Native SoundPool for zero-latency game audio
-  private var soundPool: SoundPool? = null
-  private var soundIdSuccess1 = 0
-  private var soundIdSuccess2 = 0
-  private var soundIdFanfare = 0
-  private var soundIdGentleOops = 0
-  private var soundIdChalkSnap = 0
-  private var soundIdCardLift = 0
+  // Direct Hardware-independent AudioTracks for instant sound
+  private var trackSuccess1: AudioTrack? = null
+  private var trackSuccess2: AudioTrack? = null
+  private var trackFanfare: AudioTrack? = null
+  private var trackGentleOops: AudioTrack? = null
+  private var trackChalkSnap: AudioTrack? = null
+  private var trackCardLift: AudioTrack? = null
 
   // Native Arabic Voice Synthesis
   private var tts: TextToSpeech? = null
   private var isTtsReady = false
 
   init {
-    initSoundPool()
+    scope.launch(Dispatchers.Default) {
+      try {
+        trackSuccess1 = createStaticAudioTrack(generateMarimbaArpeggio())
+        trackSuccess2 = createStaticAudioTrack(generateCrystalChime())
+        trackFanfare = createStaticAudioTrack(generateFanfareSound())
+        trackGentleOops = createStaticAudioTrack(generateGentleOopsSound())
+        trackChalkSnap = createStaticAudioTrack(generateChalkSnapSound())
+        trackCardLift = createStaticAudioTrack(generatePopSound())
+      } catch (_: Throwable) {}
+    }
 
     try {
       tts = TextToSpeech(context, this)
@@ -73,39 +75,49 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
     }
   }
 
-  private fun initSoundPool() {
-    try {
+  private fun createStaticAudioTrack(pcmData: ShortArray): AudioTrack? {
+    return try {
+      val minBufferSize = AudioTrack.getMinBufferSize(
+        sampleRate,
+        AudioFormat.CHANNEL_OUT_MONO,
+        AudioFormat.ENCODING_PCM_16BIT
+      )
+      val bufferSize = maxOf(pcmData.size * 2, minBufferSize)
+
       val attributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
-      soundPool = SoundPool.Builder()
-        .setMaxStreams(4)
-        .setAudioAttributes(attributes)
+      val format = AudioFormat.Builder()
+        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+        .setSampleRate(sampleRate)
+        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
         .build()
 
-      scope.launch(Dispatchers.IO) {
-        try {
-          val cacheDir = context.cacheDir
-          val fSuccess1 = writeWavFile(cacheDir, "snd_success_1.wav", generateMarimbaArpeggio())
-          val fSuccess2 = writeWavFile(cacheDir, "snd_success_2.wav", generateCrystalChime())
-          val fFanfare = writeWavFile(cacheDir, "snd_fanfare.wav", generateFanfareSound())
-          val fOops = writeWavFile(cacheDir, "snd_oops.wav", generateGentleOopsSound())
-          val fSnap = writeWavFile(cacheDir, "snd_snap.wav", generateChalkSnapSound())
-          val fLift = writeWavFile(cacheDir, "snd_lift.wav", generatePopSound())
+      val track = AudioTrack.Builder()
+        .setAudioAttributes(attributes)
+        .setAudioFormat(format)
+        .setBufferSizeInBytes(bufferSize)
+        .setTransferMode(AudioTrack.MODE_STATIC)
+        .build()
 
-          soundPool?.let { pool ->
-            soundIdSuccess1 = pool.load(fSuccess1.absolutePath, 1)
-            soundIdSuccess2 = pool.load(fSuccess2.absolutePath, 1)
-            soundIdFanfare = pool.load(fFanfare.absolutePath, 1)
-            soundIdGentleOops = pool.load(fOops.absolutePath, 1)
-            soundIdChalkSnap = pool.load(fSnap.absolutePath, 1)
-            soundIdCardLift = pool.load(fLift.absolutePath, 1)
-          }
-        } catch (_: Throwable) {}
-      }
-    } catch (_: Throwable) {}
+      track.write(pcmData, 0, pcmData.size)
+      track
+    } catch (_: Throwable) {
+      null
+    }
+  }
+
+  private fun playTrack(track: AudioTrack?) {
+    if (track == null || !_isSoundEnabled.value || !isAppActive) return
+    scope.launch(Dispatchers.Default) {
+      try {
+        track.stop()
+        track.reloadStaticData()
+        track.play()
+      } catch (_: Throwable) {}
+    }
   }
 
   private val vibrator: Vibrator? by lazy {
@@ -144,10 +156,8 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   fun playSuccess() {
     if (!_isSoundEnabled.value || !isAppActive) return
 
-    val soundToPlay = if (Random.nextBoolean()) soundIdSuccess1 else soundIdSuccess2
-    if (soundToPlay != 0) {
-      soundPool?.play(soundToPlay, 1.0f, 1.0f, 1, 0, 1.0f)
-    }
+    val trackToPlay = if (Random.nextBoolean()) trackSuccess1 else trackSuccess2
+    playTrack(trackToPlay)
 
     speakPraise()
     vibrateQuick(45)
@@ -158,11 +168,7 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
    */
   fun playWrong() {
     if (!_isSoundEnabled.value || !isAppActive) return
-
-    if (soundIdGentleOops != 0) {
-      soundPool?.play(soundIdGentleOops, 0.9f, 0.9f, 1, 0, 1.0f)
-    }
-
+    playTrack(trackGentleOops)
     speakEncouragement()
     vibrateDouble()
   }
@@ -172,9 +178,7 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
    */
   fun playLevelUp() {
     if (!_isSoundEnabled.value || !isAppActive) return
-    if (soundIdFanfare != 0) {
-      soundPool?.play(soundIdFanfare, 1.0f, 1.0f, 2, 0, 1.0f)
-    }
+    playTrack(trackFanfare)
     speakText("ما شاء الله! ترقية ممتازة يا بطل!")
     vibrateQuick(70)
   }
@@ -183,20 +187,14 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
    * Chalk snap sound when dropped on board
    */
   fun playChalkSnap() {
-    if (!_isSoundEnabled.value || !isAppActive) return
-    if (soundIdChalkSnap != 0) {
-      soundPool?.play(soundIdChalkSnap, 0.9f, 0.9f, 1, 0, 1.0f)
-    }
+    playTrack(trackChalkSnap)
   }
 
   /**
    * Click / Tap sound
    */
   fun playTap() {
-    if (!_isSoundEnabled.value || !isAppActive) return
-    if (soundIdCardLift != 0) {
-      soundPool?.play(soundIdCardLift, 0.7f, 0.7f, 1, 0, 1.0f)
-    }
+    playTrack(trackCardLift)
     vibrateQuick(20)
   }
 
@@ -364,69 +362,5 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
       offset += noteCount
     }
     return buffer
-  }
-
-  private fun writeWavFile(dir: File, filename: String, pcmData: ShortArray): File {
-    val file = File(dir, filename)
-    val byteData = ByteArray(pcmData.size * 2)
-    ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(pcmData)
-
-    val totalAudioLen = byteData.size.toLong()
-    val totalDataLen = totalAudioLen + 36
-    val longSampleRate = sampleRate.toLong()
-    val channels = 1
-    val byteRate = 16 * sampleRate * channels / 8
-
-    FileOutputStream(file).use { out ->
-      val header = ByteArray(44)
-      header[0] = 'R'.code.toByte()
-      header[1] = 'I'.code.toByte()
-      header[2] = 'F'.code.toByte()
-      header[3] = 'F'.code.toByte()
-      header[4] = (totalDataLen and 0xff).toByte()
-      header[5] = ((totalDataLen shr 8) and 0xff).toByte()
-      header[6] = ((totalDataLen shr 16) and 0xff).toByte()
-      header[7] = ((totalDataLen shr 24) and 0xff).toByte()
-      header[8] = 'W'.code.toByte()
-      header[9] = 'A'.code.toByte()
-      header[10] = 'V'.code.toByte()
-      header[11] = 'E'.code.toByte()
-      header[12] = 'f'.code.toByte()
-      header[13] = 'm'.code.toByte()
-      header[14] = 't'.code.toByte()
-      header[15] = ' '.code.toByte()
-      header[16] = 16
-      header[17] = 0
-      header[18] = 0
-      header[19] = 0
-      header[20] = 1
-      header[21] = 0
-      header[22] = channels.toByte()
-      header[23] = 0
-      header[24] = (longSampleRate and 0xff).toByte()
-      header[25] = ((longSampleRate shr 8) and 0xff).toByte()
-      header[26] = ((longSampleRate shr 16) and 0xff).toByte()
-      header[27] = ((longSampleRate shr 24) and 0xff).toByte()
-      header[28] = (byteRate and 0xff).toByte()
-      header[29] = ((byteRate shr 8) and 0xff).toByte()
-      header[30] = ((byteRate shr 16) and 0xff).toByte()
-      header[31] = ((byteRate shr 24) and 0xff).toByte()
-      header[32] = (channels * 16 / 8).toByte()
-      header[33] = 0
-      header[34] = 16
-      header[35] = 0
-      header[36] = 'd'.code.toByte()
-      header[37] = 'a'.code.toByte()
-      header[38] = 't'.code.toByte()
-      header[39] = 'a'.code.toByte()
-      header[40] = (totalAudioLen and 0xff).toByte()
-      header[41] = ((totalAudioLen shr 8) and 0xff).toByte()
-      header[42] = ((totalAudioLen shr 16) and 0xff).toByte()
-      header[43] = ((totalAudioLen shr 24) and 0xff).toByte()
-
-      out.write(header)
-      out.write(byteData)
-    }
-    return file
   }
 }

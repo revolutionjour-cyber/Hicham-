@@ -713,67 +713,71 @@ private fun DraggableChalkTile(
       }
       .scale(currentScale)
       .pointerInput(value) {
-        detectDragGestures(
-          onDragStart = {
-            isDragging = true
-            scope.launch {
-              pressScale.animateTo(1.12f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-            }
-          },
-          onDrag = { change, dragAmount ->
-            change.consume()
-            scope.launch {
-              offsetX.snapTo(offsetX.value + dragAmount.x)
-              offsetY.snapTo(offsetY.value + dragAmount.y)
-              val isHovered = offsetY.value < -80f
-              onHoverChange(isHovered)
-            }
-          },
-          onDragEnd = {
-            val wasHovered = offsetY.value < -80f
-            onHoverChange(false)
-            isDragging = false
-            scope.launch {
-              if (wasHovered) {
+        awaitEachGesture {
+          val down = awaitFirstDown(requireUnconsumed = false)
+          var isDrag = false
+          var totalDragX = 0f
+          var totalDragY = 0f
+          val touchSlop = viewConfiguration.touchSlop
+
+          // Start tactile press animation
+          scope.launch {
+            pressScale.animateTo(0.92f, spring(stiffness = Spring.StiffnessHigh))
+          }
+
+          while (true) {
+            val event = awaitPointerEvent()
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
+            if (!change.pressed) {
+              // Pointer released!
+              if (!isDrag) {
+                // IT'S A DIRECT TAP! Instant response!
+                scope.launch {
+                  pressScale.animateTo(1.08f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                  pressScale.animateTo(1f)
+                }
                 onDropInside()
+              } else {
+                // DRAG RELEASED
+                val wasHovered = offsetY.value < -70f
+                onHoverChange(false)
+                isDragging = false
+                scope.launch {
+                  if (wasHovered) {
+                    onDropInside()
+                  }
+                  launch { offsetX.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+                  launch { offsetY.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+                  launch { pressScale.animateTo(1f) }
+                }
               }
-              // Spring return smoothly back to wooden table
-              launch { offsetX.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
-              launch { offsetY.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
-              launch { pressScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
-            }
-          },
-          onDragCancel = {
-            onHoverChange(false)
-            isDragging = false
-            scope.launch {
-              launch { offsetX.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
-              launch { offsetY.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
-              launch { pressScale.animateTo(1f) }
-            }
-          }
-        )
-      }
-      .pointerInput(value) {
-        detectTapGestures(
-          onPress = {
-            scope.launch {
-              pressScale.animateTo(0.90f, spring(stiffness = Spring.StiffnessHigh))
-            }
-            val released = tryAwaitRelease()
-            if (released) {
-              scope.launch {
-                pressScale.animateTo(1.08f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
-                pressScale.animateTo(1f)
-              }
+              break
             } else {
-              scope.launch { pressScale.animateTo(1f) }
+              val drag = change.positionChange()
+              totalDragX += drag.x
+              totalDragY += drag.y
+              val dist = kotlin.math.sqrt(totalDragX * totalDragX + totalDragY * totalDragY)
+
+              if (!isDrag && dist > touchSlop) {
+                isDrag = true
+                isDragging = true
+                scope.launch {
+                  pressScale.animateTo(1.14f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                }
+              }
+
+              if (isDrag) {
+                change.consume()
+                scope.launch {
+                  offsetX.snapTo(offsetX.value + drag.x)
+                  offsetY.snapTo(offsetY.value + drag.y)
+                  onHoverChange(offsetY.value < -70f)
+                }
+              }
             }
-          },
-          onTap = {
-            onDropInside()
           }
-        )
+        }
       }
       .testTag("tile_$value")
   ) {
