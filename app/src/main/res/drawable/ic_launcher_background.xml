@@ -1,35 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="0"
-                android:startY="0"
-                android:endX="108"
-                android:endY="108"
-                android:type="linear">
-                <item android:offset="0.0" android:color="#2E1065" />
-                <item android:offset="0.6" android:color="#6D28D9" />
-                <item android:offset="1.0" android:color="#0284C7" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <!-- Background little stars -->
     <path
-        android:fillColor="#80FDE047"
-        android:pathData="M24,20L25.5,23.5L29,25L25.5,26.5L24,30L22.5,26.5L19,25L22.5,23.5Z" />
-    <path
-        android:fillColor="#80FFFFFF"
-        android:pathData="M84,24L85,26.5L87.5,27.5L85,28.5L84,31L83,28.5L80.5,27.5L83,26.5Z" />
-    <path
-        android:fillColor="#60F472B6"
-        android:pathData="M20,80L21.5,83L24.5,84L21.5,85L20,88L18.5,85L15.5,84L18.5,83Z" />
-    <path
-        android:fillColor="#8038BDF8"
-        android:pathData="M88,78L89.5,81L92.5,82L89.5,83L88,86L86.5,83L83.5,82L86.5,81Z" />
+        android:fillColor="#22C55E"
+        android:pathData="M0,0h108v108h-108z" />
 </vector>

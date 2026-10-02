@@ -17,9 +17,11 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -236,241 +238,420 @@ fun ChalkboardPlayScreen(
         )
       }
     ) { innerPadding ->
-      Box(
+      BoxWithConstraints(
         modifier = Modifier
           .fillMaxSize()
           .padding(innerPadding),
         contentAlignment = Alignment.TopCenter
       ) {
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = 600.dp)
-            .padding(horizontal = 14.dp, vertical = 4.dp)
-            .navigationBarsPadding(),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          // The Two Top Button Bars: Modern Calculator Operations (+, −, ×, ÷) + Difficulty Selector
-          // Hidden by default so they never disturb the view, smoothly animating into view on demand!
-          AnimatedVisibility(
-            visible = showOperationBars,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-          ) {
-            Column(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              // 1. Four Modern Calculator Buttons (+, −, ×, ÷)
-              ModernOperationSelectorRow(
-                selectedOp = selectedOp,
-                onSelectOp = { op ->
-                  onSelectOp(op)
-                  showOperationBars = false // Auto-hide smoothly after selection
-                }
-              )
+        val isLandscape = maxWidth > maxHeight
 
-              // 2. Difficulty Selector (سهل | متوسط | صعب)
-              ChalkDifficultySelector(
-                selectedDifficulty = selectedDifficulty,
-                onSelectDifficulty = { diff ->
-                  onSelectDifficulty(diff)
-                  showOperationBars = false // Auto-hide smoothly after selection
-                }
-              )
-            }
-          }
-
-          // Dynamic Calculation Result Component (updates on number/operation press)
-          DynamicCalculationResultBanner(
-            challenge = challenge,
-            currentSlotAnswer = currentSlotAnswer,
-            isSlotAnswerWrong = isSlotAnswerWrong
-          )
-
-          // 4. THE REALISTIC WOODEN CHALKBOARD (From the reference photo)
-          ChalkboardSlate(
+        if (isLandscape) {
+          // ════════════════════════════════════════════════════════════════════════════
+          // LANDSCAPE ADAPTIVE LAYOUT: Side-by-side Dual Pane
+          // Guarantees that answer buttons are NEVER pushed off-screen or hidden!
+          // ════════════════════════════════════════════════════════════════════════════
+          Row(
             modifier = Modifier
-              .fillMaxWidth()
-              .height(230.dp)
+              .fillMaxSize()
+              .padding(horizontal = 14.dp, vertical = 4.dp)
+              .navigationBarsPadding(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
           ) {
+            // LEFT PANE: Wooden Chalkboard (Scales smoothly to available height)
             Box(
               modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
+                .weight(1.15f)
+                .fillMaxHeight()
+                .padding(vertical = 4.dp),
+              contentAlignment = Alignment.Center
             ) {
-              Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+              ChalkboardSlate(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .fillMaxHeight()
               ) {
-                // Hand-written Arabic story prompt in Chalk
-                Text(
-                  text = challenge.storyPromptAr,
-                  fontFamily = CairoFontFamily,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 15.sp,
-                  color = Color(0xFFF1F5F9),
-                  modifier = Modifier.padding(top = 4.dp)
+                ChalkboardCardContent(
+                  challenge = challenge,
+                  isTargetHovered = isTargetHovered,
+                  currentSlotAnswer = currentSlotAnswer,
+                  isSlotAnswerWrong = isSlotAnswerWrong,
+                  onToggleOperationBars = { showOperationBars = !showOperationBars }
                 )
+              }
+            }
 
-                // Hand-written Chalk Math Equation: Left to Right
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                  Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+            // RIGHT PANE: Controls + Always Visible Answer Buttons
+            Column(
+              modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              // Expandable Operations & Difficulty Bar (Transparent background)
+              AnimatedVisibility(
+                visible = showOperationBars,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+              ) {
+                Column(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  ModernOperationSelectorRow(
+                    selectedOp = selectedOp,
+                    onSelectOp = { op ->
+                      onSelectOp(op)
+                      showOperationBars = false
+                    }
+                  )
+
+                  ChalkDifficultySelector(
+                    selectedDifficulty = selectedDifficulty,
+                    onSelectDifficulty = { diff ->
+                      onSelectDifficulty(diff)
+                      showOperationBars = false
+                    }
+                  )
+                }
+              }
+
+              // Dynamic Calculation Result Component
+              DynamicCalculationResultBanner(
+                challenge = challenge,
+                currentSlotAnswer = currentSlotAnswer,
+                isSlotAnswerWrong = isSlotAnswerWrong
+              )
+
+              // Desk Surface Header with Cactus & Cheer
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                PottedCactusDecor(sizeDp = 34.dp)
+
+                AnimatedVisibility(
+                  visible = correctCheer != null,
+                  enter = fadeIn() + scaleIn()
+                ) {
+                  val bannerColor = if (isSlotAnswerWrong) BrandRose else BrandEmerald
+                  Box(
+                    modifier = Modifier
+                      .scale(cheerScale.value)
+                      .shadow(6.dp, RoundedCornerShape(18.dp), spotColor = bannerColor)
+                      .clip(RoundedCornerShape(18.dp))
+                      .background(bannerColor)
+                      .border(2.dp, Color.White, RoundedCornerShape(18.dp))
+                      .padding(horizontal = 14.dp, vertical = 4.dp)
                   ) {
-                    ChalkText(
-                      text = "${challenge.firstNum}",
-                      fontSize = 44.sp,
-                      color = Color(0xFFF8FAFC)
-                    )
-
-                    Spacer(modifier = Modifier.size(14.dp))
-
-                    ChalkText(
-                      text = challenge.effectiveOp.symbol,
-                      fontSize = 38.sp,
-                      color = Color(0xFFFEF08A), // Soft yellow chalk for operator
-                      modifier = Modifier.clickable { showOperationBars = !showOperationBars }
-                    )
-
-                    Spacer(modifier = Modifier.size(14.dp))
-
-                    ChalkText(
-                      text = "${challenge.secondNum}",
-                      fontSize = 44.sp,
-                      color = Color(0xFFF8FAFC)
-                    )
-
-                    Spacer(modifier = Modifier.size(14.dp))
-
-                    ChalkText(
-                      text = "=",
-                      fontSize = 38.sp,
-                      color = Color(0xFFFEF08A)
-                    )
-
-                    Spacer(modifier = Modifier.size(14.dp))
-
-                    // THE TARGET DROP SLOT ON THE CHALKBOARD
-                    ChalkTargetDropSlot(
-                      isHovered = isTargetHovered,
-                      currentValue = currentSlotAnswer,
-                      isWrong = isSlotAnswerWrong,
-                      modifier = Modifier.testTag("chalk_target_slot")
+                    Text(
+                      text = correctCheer ?: "",
+                      fontFamily = CairoFontFamily,
+                      fontWeight = FontWeight.Black,
+                      fontSize = 14.sp,
+                      color = Color.White
                     )
                   }
                 }
 
-                // Decorative Chalk Ledge at the bottom of the board
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
-                ) {
-                  ChalkLedgeDecor()
+                Text(
+                  text = "اختر الإجابة:",
+                  fontFamily = CairoFontFamily,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 13.sp,
+                  color = Color(0xFF57534E)
+                )
+              }
 
+              // Answer Cards Tray: Placed prominently, 100% visible!
+              AnswerCardsTray(
+                challenge = challenge,
+                buttonStates = buttonStates,
+                onHoverChange = { isTargetHovered = it },
+                onAnswerDropped = onAnswerDropped
+              )
+            }
+          }
+        } else {
+          // ════════════════════════════════════════════════════════════════════════════
+          // PORTRAIT ADAPTIVE LAYOUT: Responsive Column with Scroll Safety
+          // Height-aware Chalkboard + Scroll guarantees buttons are never cut off
+          // ════════════════════════════════════════════════════════════════════════════
+          val boardHeight = if (maxHeight < 680.dp) 185.dp else 225.dp
+
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .widthIn(max = 600.dp)
+              .verticalScroll(rememberScrollState())
+              .padding(horizontal = 14.dp, vertical = 4.dp)
+              .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            // Expandable Operations & Difficulty Selector (Transparent)
+            AnimatedVisibility(
+              visible = showOperationBars,
+              enter = fadeIn() + expandVertically(),
+              exit = fadeOut() + shrinkVertically()
+            ) {
+              Column(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                ModernOperationSelectorRow(
+                  selectedOp = selectedOp,
+                  onSelectOp = { op ->
+                    onSelectOp(op)
+                    showOperationBars = false
+                  }
+                )
+
+                ChalkDifficultySelector(
+                  selectedDifficulty = selectedDifficulty,
+                  onSelectDifficulty = { diff ->
+                    onSelectDifficulty(diff)
+                    showOperationBars = false
+                  }
+                )
+              }
+            }
+
+            // Dynamic Calculation Result Component
+            DynamicCalculationResultBanner(
+              challenge = challenge,
+              currentSlotAnswer = currentSlotAnswer,
+              isSlotAnswerWrong = isSlotAnswerWrong
+            )
+
+            // Realistic Wooden Chalkboard with Adaptive Height
+            ChalkboardSlate(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(boardHeight)
+            ) {
+              ChalkboardCardContent(
+                challenge = challenge,
+                isTargetHovered = isTargetHovered,
+                currentSlotAnswer = currentSlotAnswer,
+                isSlotAnswerWrong = isSlotAnswerWrong,
+                onToggleOperationBars = { showOperationBars = !showOperationBars }
+              )
+            }
+
+            // Desk Surface Header with Cactus & Cheer
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              PottedCactusDecor(sizeDp = 48.dp)
+
+              AnimatedVisibility(
+                visible = correctCheer != null,
+                enter = fadeIn() + scaleIn()
+              ) {
+                val bannerColor = if (isSlotAnswerWrong) BrandRose else BrandEmerald
+                Box(
+                  modifier = Modifier
+                    .scale(cheerScale.value)
+                    .shadow(6.dp, RoundedCornerShape(18.dp), spotColor = bannerColor)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(bannerColor)
+                    .border(2.dp, Color.White, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 18.dp, vertical = 6.dp)
+                ) {
                   Text(
-                    text = "المس أو اسحب الرقم للسبورة 👆",
+                    text = correctCheer ?: "",
                     fontFamily = CairoFontFamily,
-                    fontSize = 12.sp,
-                    color = Color(0xFFCBD5E1)
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = Color.White
                   )
                 }
               }
-            }
-          }
 
-          // 4. Desk Surface Header with Cactus (Faithful to photo)
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            PottedCactusDecor(sizeDp = 48.dp)
-
-            // Cheer Banner
-            AnimatedVisibility(
-              visible = correctCheer != null,
-              enter = fadeIn() + scaleIn()
-            ) {
-              val bannerColor = if (isSlotAnswerWrong) BrandRose else BrandEmerald
-              Box(
-                modifier = Modifier
-                  .scale(cheerScale.value)
-                  .shadow(6.dp, RoundedCornerShape(18.dp), spotColor = bannerColor)
-                  .clip(RoundedCornerShape(18.dp))
-                  .background(bannerColor)
-                  .border(2.dp, Color.White, RoundedCornerShape(18.dp))
-                  .padding(horizontal = 18.dp, vertical = 6.dp)
-              ) {
-                Text(
-                  text = correctCheer ?: "",
-                  fontFamily = CairoFontFamily,
-                  fontWeight = FontWeight.Black,
-                  fontSize = 16.sp,
-                  color = Color.White
-                )
-              }
-            }
-
-            Text(
-              text = "اختر الإجابة:",
-              fontFamily = CairoFontFamily,
-              fontWeight = FontWeight.Bold,
-              fontSize = 14.sp,
-              color = Color(0xFF57534E)
-            )
-          }
-
-          // 5. DRAGGABLE NUMBER SUGGESTIONS TRAY (Sitting on the wooden table)
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .shadow(8.dp, RoundedCornerShape(24.dp), spotColor = Color(0x3078350F))
-              .clip(RoundedCornerShape(24.dp))
-              // Natural Wood Desk Texture
-              .background(
-                Brush.verticalGradient(
-                  colors = listOf(
-                    Color(0xFFEADBCE), // Polished light oak
-                    Color(0xFFDCC8B4),
-                    Color(0xFFCBB29B)
-                  )
-                )
+              Text(
+                text = "اختر الإجابة:",
+                fontFamily = CairoFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color(0xFF57534E)
               )
-              .border(2.dp, Color(0xFFBA9E80), RoundedCornerShape(24.dp))
-              .padding(14.dp)
-          ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              challenge.options.forEach { optionVal ->
-                val buttonState = buttonStates[optionVal] ?: AnswerButtonState.DEFAULT
-                DraggableChalkTile(
-                  value = optionVal,
-                  state = buttonState,
-                  onHoverChange = { isTargetHovered = it },
-                  onDropInside = {
-                    onAnswerDropped(optionVal)
-                  },
-                  modifier = Modifier.weight(1f)
-                )
-              }
             }
-          }
 
-          Spacer(modifier = Modifier.height(16.dp))
+            // DRAGGABLE NUMBER SUGGESTIONS TRAY (Sitting on wooden table)
+            AnswerCardsTray(
+              challenge = challenge,
+              buttonStates = buttonStates,
+              onHoverChange = { isTargetHovered = it },
+              onAnswerDropped = onAnswerDropped
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+          }
         }
+      }
+    }
+  }
+}
+
+/**
+ * Chalkboard Card Content: Arabic story prompt, hand-written chalk equation, target slot, and ledge
+ */
+@Composable
+private fun ChalkboardCardContent(
+  challenge: DynamicMathChallenge,
+  isTargetHovered: Boolean,
+  currentSlotAnswer: Int?,
+  isSlotAnswerWrong: Boolean,
+  onToggleOperationBars: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .padding(12.dp)
+  ) {
+    Column(
+      modifier = Modifier.fillMaxSize(),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.SpaceBetween
+    ) {
+      // Hand-written Arabic story prompt in Chalk
+      Text(
+        text = challenge.storyPromptAr,
+        fontFamily = CairoFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 15.sp,
+        color = Color(0xFFF1F5F9),
+        modifier = Modifier.padding(top = 4.dp)
+      )
+
+      // Hand-written Chalk Math Equation: Left to Right
+      CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.Center
+        ) {
+          ChalkText(
+            text = "${challenge.firstNum}",
+            fontSize = 42.sp,
+            color = Color(0xFFF8FAFC)
+          )
+
+          Spacer(modifier = Modifier.size(12.dp))
+
+          ChalkText(
+            text = challenge.effectiveOp.symbol,
+            fontSize = 36.sp,
+            color = Color(0xFFFEF08A), // Soft yellow chalk for operator
+            modifier = Modifier.clickable { onToggleOperationBars() }
+          )
+
+          Spacer(modifier = Modifier.size(12.dp))
+
+          ChalkText(
+            text = "${challenge.secondNum}",
+            fontSize = 42.sp,
+            color = Color(0xFFF8FAFC)
+          )
+
+          Spacer(modifier = Modifier.size(12.dp))
+
+          ChalkText(
+            text = "=",
+            fontSize = 36.sp,
+            color = Color(0xFFFEF08A)
+          )
+
+          Spacer(modifier = Modifier.size(12.dp))
+
+          // THE TARGET DROP SLOT ON THE CHALKBOARD
+          ChalkTargetDropSlot(
+            isHovered = isTargetHovered,
+            currentValue = currentSlotAnswer,
+            isWrong = isSlotAnswerWrong,
+            modifier = Modifier.testTag("chalk_target_slot")
+          )
+        }
+      }
+
+      // Decorative Chalk Ledge at the bottom of the board
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        ChalkLedgeDecor()
+
+        Text(
+          text = "المس أو اسحب الرقم للسبورة 👆",
+          fontFamily = CairoFontFamily,
+          fontSize = 12.sp,
+          color = Color(0xFFCBD5E1)
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Answer Cards Tray: The 4 draggable/clickable tactile answer cards
+ */
+@Composable
+private fun AnswerCardsTray(
+  challenge: DynamicMathChallenge,
+  buttonStates: Map<Int, AnswerButtonState>,
+  onHoverChange: (Boolean) -> Unit,
+  onAnswerDropped: (Int) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Box(
+    modifier = modifier
+      .fillMaxWidth()
+      .shadow(8.dp, RoundedCornerShape(24.dp), spotColor = Color(0x3078350F))
+      .clip(RoundedCornerShape(24.dp))
+      .background(
+        Brush.verticalGradient(
+          colors = listOf(
+            Color(0xFFEADBCE), // Polished light oak
+            Color(0xFFDCC8B4),
+            Color(0xFFCBB29B)
+          )
+        )
+      )
+      .border(2.dp, Color(0xFFBA9E80), RoundedCornerShape(24.dp))
+      .padding(12.dp)
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.spacedBy(10.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      challenge.options.forEach { optionVal ->
+        val buttonState = buttonStates[optionVal] ?: AnswerButtonState.DEFAULT
+        DraggableChalkTile(
+          value = optionVal,
+          state = buttonState,
+          onHoverChange = onHoverChange,
+          onDropInside = {
+            onAnswerDropped(optionVal)
+          },
+          modifier = Modifier.weight(1f)
+        )
       }
     }
   }
