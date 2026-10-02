@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.SoundPool
-import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -51,18 +50,11 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   private var soundIdChalkSnap = 0
   private var soundIdCardLift = 0
 
-  // Hardware ToneGenerator backup
-  private var toneGenerator: ToneGenerator? = null
-
   // Native Arabic Voice Synthesis
   private var tts: TextToSpeech? = null
   private var isTtsReady = false
 
   init {
-    try {
-      toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-    } catch (_: Throwable) {}
-
     initSoundPool()
 
     try {
@@ -84,12 +76,12 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   private fun initSoundPool() {
     try {
       val attributes = AudioAttributes.Builder()
-        .setUsage(AudioAttributes.USAGE_GAME)
-        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
       soundPool = SoundPool.Builder()
-        .setMaxStreams(6)
+        .setMaxStreams(4)
         .setAudioAttributes(attributes)
         .build()
 
@@ -157,10 +149,6 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
       soundPool?.play(soundToPlay, 1.0f, 1.0f, 1, 0, 1.0f)
     }
 
-    try {
-      toneGenerator?.startTone(ToneGenerator.TONE_PROP_ACK, 140)
-    } catch (_: Throwable) {}
-
     speakPraise()
     vibrateQuick(45)
   }
@@ -175,10 +163,6 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
       soundPool?.play(soundIdGentleOops, 0.9f, 0.9f, 1, 0, 1.0f)
     }
 
-    try {
-      toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 100)
-    } catch (_: Throwable) {}
-
     speakEncouragement()
     vibrateDouble()
   }
@@ -191,9 +175,6 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
     if (soundIdFanfare != 0) {
       soundPool?.play(soundIdFanfare, 1.0f, 1.0f, 2, 0, 1.0f)
     }
-    try {
-      toneGenerator?.startTone(ToneGenerator.TONE_PROP_PROMPT, 180)
-    } catch (_: Throwable) {}
     speakText("ما شاء الله! ترقية ممتازة يا بطل!")
     vibrateQuick(70)
   }
@@ -216,30 +197,31 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
     if (soundIdCardLift != 0) {
       soundPool?.play(soundIdCardLift, 0.7f, 0.7f, 1, 0, 1.0f)
     }
-    try {
-      toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 35)
-    } catch (_: Throwable) {}
     vibrateQuick(20)
   }
 
   private fun speakPraise() {
-    val praises = listOf(
-      "أحسنت يا بطل!",
-      "ممتاز جداً!",
-      "إجابة عبقرية!",
-      "رائع، بارك الله فيك!",
-      "ذكاء خارق!"
-    )
-    speakText(praises.random())
+    playRawSoundOrFallback("correct_answer", "إجابة صحيحة!")
   }
 
   private fun speakEncouragement() {
-    val encouragements = listOf(
-      "لا بأس، حاول ثانية!",
-      "فكر جيداً، أنت تستطيع!",
-      "أعد المحاولة يا بطل!"
-    )
-    speakText(encouragements.random())
+    playRawSoundOrFallback("wrong_answer", "حاول مرة أخرى!")
+  }
+
+  private fun playRawSoundOrFallback(rawResName: String, fallbackText: String) {
+    if (!_isSoundEnabled.value || !isAppActive) return
+    try {
+      val resId = context.resources.getIdentifier(rawResName, "raw", context.packageName)
+      if (resId != 0) {
+        val mp = android.media.MediaPlayer.create(context, resId)
+        mp?.setOnCompletionListener { it.release() }
+        mp?.start()
+        return
+      }
+    } catch (_: Throwable) {}
+
+    // Fallback to native Arabic voice synthesis
+    speakText(fallbackText)
   }
 
   private fun speakText(text: String) {

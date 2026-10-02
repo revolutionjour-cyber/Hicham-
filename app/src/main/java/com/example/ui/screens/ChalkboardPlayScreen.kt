@@ -15,6 +15,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -248,136 +250,121 @@ fun ChalkboardPlayScreen(
 
         if (isLandscape) {
           // ════════════════════════════════════════════════════════════════════════════
-          // LANDSCAPE ADAPTIVE LAYOUT: Side-by-side Dual Pane
-          // Guarantees that answer buttons are NEVER pushed off-screen or hidden!
+          // LANDSCAPE CINEMATIC LAYOUT: Panoramic Blackboard & Ergonomic Bottom Desk
+          // Chalkboard is in the center; Answer buttons are at the bottom within natural thumb reach.
           // ════════════════════════════════════════════════════════════════════════════
-          Row(
+          Column(
             modifier = Modifier
-              .fillMaxSize()
-              .padding(horizontal = 14.dp, vertical = 4.dp)
+              .fillMaxWidth()
+              .widthIn(max = 680.dp)
+              .verticalScroll(rememberScrollState())
+              .padding(horizontal = 16.dp, vertical = 2.dp)
               .navigationBarsPadding(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
           ) {
-            // LEFT PANE: Wooden Chalkboard (Scales smoothly to available height)
-            Box(
-              modifier = Modifier
-                .weight(1.15f)
-                .fillMaxHeight()
-                .padding(vertical = 4.dp),
-              contentAlignment = Alignment.Center
+            // Expandable Operations & Difficulty Bar (Transparent background)
+            AnimatedVisibility(
+              visible = showOperationBars,
+              enter = fadeIn() + expandVertically(),
+              exit = fadeOut() + shrinkVertically()
             ) {
-              ChalkboardSlate(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .fillMaxHeight()
+              Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
               ) {
-                ChalkboardCardContent(
-                  challenge = challenge,
-                  isTargetHovered = isTargetHovered,
-                  currentSlotAnswer = currentSlotAnswer,
-                  isSlotAnswerWrong = isSlotAnswerWrong,
-                  onToggleOperationBars = { showOperationBars = !showOperationBars }
-                )
-              }
-            }
-
-            // RIGHT PANE: Controls + Always Visible Answer Buttons
-            Column(
-              modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-                .padding(vertical = 4.dp),
-              horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-              // Expandable Operations & Difficulty Bar (Transparent background)
-              AnimatedVisibility(
-                visible = showOperationBars,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-              ) {
-                Column(
-                  modifier = Modifier.fillMaxWidth(),
-                  verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                  ModernOperationSelectorRow(
-                    selectedOp = selectedOp,
-                    onSelectOp = { op ->
-                      onSelectOp(op)
-                      showOperationBars = false
-                    }
-                  )
-
-                  ChalkDifficultySelector(
-                    selectedDifficulty = selectedDifficulty,
-                    onSelectDifficulty = { diff ->
-                      onSelectDifficulty(diff)
-                      showOperationBars = false
-                    }
-                  )
-                }
-              }
-
-              // Dynamic Calculation Result Component
-              DynamicCalculationResultBanner(
-                challenge = challenge,
-                currentSlotAnswer = currentSlotAnswer,
-                isSlotAnswerWrong = isSlotAnswerWrong
-              )
-
-              // Desk Surface Header with Cactus & Cheer
-              Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                PottedCactusDecor(sizeDp = 34.dp)
-
-                AnimatedVisibility(
-                  visible = correctCheer != null,
-                  enter = fadeIn() + scaleIn()
-                ) {
-                  val bannerColor = if (isSlotAnswerWrong) BrandRose else BrandEmerald
-                  Box(
-                    modifier = Modifier
-                      .scale(cheerScale.value)
-                      .shadow(6.dp, RoundedCornerShape(18.dp), spotColor = bannerColor)
-                      .clip(RoundedCornerShape(18.dp))
-                      .background(bannerColor)
-                      .border(2.dp, Color.White, RoundedCornerShape(18.dp))
-                      .padding(horizontal = 14.dp, vertical = 4.dp)
-                  ) {
-                    Text(
-                      text = correctCheer ?: "",
-                      fontFamily = CairoFontFamily,
-                      fontWeight = FontWeight.Black,
-                      fontSize = 14.sp,
-                      color = Color.White
-                    )
+                ModernOperationSelectorRow(
+                  selectedOp = selectedOp,
+                  onSelectOp = { op ->
+                    onSelectOp(op)
+                    showOperationBars = false
                   }
-                }
+                )
 
-                Text(
-                  text = "اختر الإجابة:",
-                  fontFamily = CairoFontFamily,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 13.sp,
-                  color = Color(0xFF57534E)
+                ChalkDifficultySelector(
+                  selectedDifficulty = selectedDifficulty,
+                  onSelectDifficulty = { diff ->
+                    onSelectDifficulty(diff)
+                    showOperationBars = false
+                  }
                 )
               }
+            }
 
-              // Answer Cards Tray: Placed prominently, 100% visible!
-              AnswerCardsTray(
+            // Dynamic Calculation Result Component (Compact ribbon)
+            DynamicCalculationResultBanner(
+              challenge = challenge,
+              currentSlotAnswer = currentSlotAnswer,
+              isSlotAnswerWrong = isSlotAnswerWrong
+            )
+
+            // Panoramic Centered Chalkboard Slate
+            ChalkboardSlate(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(155.dp)
+            ) {
+              ChalkboardCardContent(
                 challenge = challenge,
-                buttonStates = buttonStates,
-                onHoverChange = { isTargetHovered = it },
-                onAnswerDropped = onAnswerDropped
+                isTargetHovered = isTargetHovered,
+                currentSlotAnswer = currentSlotAnswer,
+                isSlotAnswerWrong = isSlotAnswerWrong,
+                onToggleOperationBars = { showOperationBars = !showOperationBars }
               )
             }
+
+            // Desk Surface Header with Cactus & Cheer
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              PottedCactusDecor(sizeDp = 28.dp)
+
+              AnimatedVisibility(
+                visible = correctCheer != null,
+                enter = fadeIn() + scaleIn()
+              ) {
+                val bannerColor = if (isSlotAnswerWrong) BrandRose else BrandEmerald
+                Box(
+                  modifier = Modifier
+                    .scale(cheerScale.value)
+                    .shadow(4.dp, RoundedCornerShape(14.dp), spotColor = bannerColor)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(bannerColor)
+                    .border(1.5.dp, Color.White, RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 2.dp)
+                ) {
+                  Text(
+                    text = correctCheer ?: "",
+                    fontFamily = CairoFontFamily,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    color = Color.White
+                  )
+                }
+              }
+
+              Text(
+                text = "اختر الإجابة:",
+                fontFamily = CairoFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = Color(0xFF57534E)
+              )
+            }
+
+            // Answer Cards Tray: Sitting comfortably at the bottom within thumb reach of both hands!
+            AnswerCardsTray(
+              challenge = challenge,
+              buttonStates = buttonStates,
+              onHoverChange = { isTargetHovered = it },
+              onAnswerDropped = onAnswerDropped
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
           }
         } else {
           // ════════════════════════════════════════════════════════════════════════════
@@ -659,7 +646,7 @@ private fun AnswerCardsTray(
 
 /**
  * Draggable Number Tile with fluid drag physics and instant tap responsiveness.
- * Supports BOTH drag-and-drop to the board AND direct tap with zero gesture conflicts.
+ * Supports BOTH drag-and-drop to the board AND direct tap with tactile spring bounce.
  */
 @Composable
 private fun DraggableChalkTile(
@@ -670,6 +657,25 @@ private fun DraggableChalkTile(
   modifier: Modifier = Modifier
 ) {
   val shape = RoundedCornerShape(20.dp)
+  val scope = rememberCoroutineScope()
+
+  val offsetX = remember { Animatable(0f) }
+  val offsetY = remember { Animatable(0f) }
+  var isDragging by remember { mutableStateOf(false) }
+  val pressScale = remember { Animatable(1f) }
+  val shakeOffset = remember { Animatable(0f) }
+
+  // Playful shake animation on wrong answer
+  LaunchedEffect(state) {
+    if (state == AnswerButtonState.WRONG) {
+      shakeOffset.snapTo(0f)
+      repeat(3) {
+        shakeOffset.animateTo(-10f, spring(stiffness = Spring.StiffnessHigh))
+        shakeOffset.animateTo(10f, spring(stiffness = Spring.StiffnessHigh))
+      }
+      shakeOffset.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+    }
+  }
 
   val bgColor = when (state) {
     AnswerButtonState.CORRECT -> Color(0xFF10B981) // Emerald
@@ -688,47 +694,125 @@ private fun DraggableChalkTile(
     AnswerButtonState.DEFAULT -> Color(0xFF1E293B)
   }
 
-  val elevation = when (state) {
-    AnswerButtonState.CORRECT, AnswerButtonState.WRONG -> 8.dp
-    AnswerButtonState.DEFAULT -> 4.dp
+  val elevation = when {
+    isDragging -> 16.dp
+    state != AnswerButtonState.DEFAULT -> 8.dp
+    else -> 4.dp
   }
 
-  Surface(
-    onClick = { onDropInside() },
-    shape = shape,
-    color = bgColor,
-    shadowElevation = elevation,
-    border = androidx.compose.foundation.BorderStroke(
-      width = if (state == AnswerButtonState.DEFAULT) 1.5.dp else 2.5.dp,
-      color = borderColor
-    ),
+  val currentScale = if (isDragging) 1.14f else pressScale.value
+
+  Box(
     modifier = modifier
-      .height(68.dp)
+      .zIndex(if (isDragging) 15f else 1f)
+      .offset {
+        IntOffset(
+          (offsetX.value + shakeOffset.value).roundToInt(),
+          offsetY.value.roundToInt()
+        )
+      }
+      .scale(currentScale)
+      .pointerInput(value) {
+        detectDragGestures(
+          onDragStart = {
+            isDragging = true
+            scope.launch {
+              pressScale.animateTo(1.12f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+            }
+          },
+          onDrag = { change, dragAmount ->
+            change.consume()
+            scope.launch {
+              offsetX.snapTo(offsetX.value + dragAmount.x)
+              offsetY.snapTo(offsetY.value + dragAmount.y)
+              val isHovered = offsetY.value < -80f
+              onHoverChange(isHovered)
+            }
+          },
+          onDragEnd = {
+            val wasHovered = offsetY.value < -80f
+            onHoverChange(false)
+            isDragging = false
+            scope.launch {
+              if (wasHovered) {
+                onDropInside()
+              }
+              // Spring return smoothly back to wooden table
+              launch { offsetX.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+              launch { offsetY.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+              launch { pressScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
+            }
+          },
+          onDragCancel = {
+            onHoverChange(false)
+            isDragging = false
+            scope.launch {
+              launch { offsetX.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+              launch { offsetY.animateTo(0f, spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessLow)) }
+              launch { pressScale.animateTo(1f) }
+            }
+          }
+        )
+      }
+      .pointerInput(value) {
+        detectTapGestures(
+          onPress = {
+            scope.launch {
+              pressScale.animateTo(0.90f, spring(stiffness = Spring.StiffnessHigh))
+            }
+            val released = tryAwaitRelease()
+            if (released) {
+              scope.launch {
+                pressScale.animateTo(1.08f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                pressScale.animateTo(1f)
+              }
+            } else {
+              scope.launch { pressScale.animateTo(1f) }
+            }
+          },
+          onTap = {
+            onDropInside()
+          }
+        )
+      }
       .testTag("tile_$value")
   ) {
-    Box(
+    Surface(
+      shape = shape,
+      color = bgColor,
+      shadowElevation = elevation,
+      border = androidx.compose.foundation.BorderStroke(
+        width = if (state == AnswerButtonState.DEFAULT) 1.5.dp else 2.5.dp,
+        color = borderColor
+      ),
       modifier = Modifier
-        .fillMaxSize()
-        .background(
-          if (state == AnswerButtonState.DEFAULT) {
-            Brush.verticalGradient(
-              listOf(Color.White, Color(0xFFF8FAFC))
-            )
-          } else {
-            Brush.verticalGradient(
-              listOf(bgColor.copy(alpha = 0.92f), bgColor)
-            )
-          }
-        ),
-      contentAlignment = Alignment.Center
+        .fillMaxWidth()
+        .height(68.dp)
     ) {
-      Text(
-        text = "$value",
-        fontFamily = FredokaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        color = textColor
-      )
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(
+            if (state == AnswerButtonState.DEFAULT) {
+              Brush.verticalGradient(
+                listOf(Color.White, Color(0xFFF8FAFC))
+              )
+            } else {
+              Brush.verticalGradient(
+                listOf(bgColor.copy(alpha = 0.92f), bgColor)
+              )
+            }
+          ),
+        contentAlignment = Alignment.Center
+      ) {
+        Text(
+          text = "$value",
+          fontFamily = FredokaFontFamily,
+          fontWeight = FontWeight.Bold,
+          fontSize = 32.sp,
+          color = textColor
+        )
+      }
     }
   }
 }
