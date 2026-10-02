@@ -7,10 +7,28 @@ enum class MathOperator(val symbol: String) {
 
 enum class TangibleItemType(val titleAr: String, val singularAr: String) {
   SHINY_APPLE("تفاح أحمر لذيذ", "تفاحة"),
+  SWEET_ORANGE("برتقال طازج", "برتقالة"),
+  YELLOW_BANANA("موز أصفر حلو", "موزة"),
+  RED_STRAWBERRY("فراولة حمراء شهية", "فراولة"),
+  PURPLE_GRAPES("عنب بنفسجي لذيذ", "عنقود عنب"),
+  JUICY_WATERMELON("بطيخ منعش", "شريحة بطيخ"),
+
+  // Kept for backward compatibility
   GOLDEN_STAR("نجوم ذهبية لامعة", "نجمة"),
   MAGIC_CRYSTAL("بلورات طاقة سحرية", "بلورة"),
   ENERGY_BATTERY("بطاريات فضائية قوية", "بطارية"),
-  GOLD_COIN("عملات ذهبية براقة", "عملة")
+  GOLD_COIN("عملات ذهبية براقة", "عملة");
+
+  companion object {
+    val KNOWN_FRUITS = listOf(
+      SHINY_APPLE,
+      SWEET_ORANGE,
+      YELLOW_BANANA,
+      RED_STRAWBERRY,
+      PURPLE_GRAPES,
+      JUICY_WATERMELON
+    )
+  }
 }
 
 data class MathQuestion(
@@ -27,7 +45,7 @@ data class MathQuestion(
   companion object {
     fun generateQuestionsForLevel(level: Int, count: Int = 5): List<MathQuestion> {
       val questions = mutableListOf<MathQuestion>()
-      val items = TangibleItemType.values()
+      val items = TangibleItemType.KNOWN_FRUITS
 
       when (level) {
         1 -> {

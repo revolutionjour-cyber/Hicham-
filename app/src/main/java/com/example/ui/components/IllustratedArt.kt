@@ -580,6 +580,260 @@ fun IllustratedCross(
 }
 
 /**
+ * Realistic 3D Orange with leaf and stem.
+ */
+@Composable
+fun IllustratedSweetOrange(
+  modifier: Modifier = Modifier,
+  sizeDp: Dp = 44.dp
+) {
+  Canvas(modifier = modifier.size(sizeDp)) {
+    val w = size.width
+    val h = size.height
+    val cx = w * 0.5f
+
+    drawOval(
+      color = Color(0x35000000),
+      topLeft = Offset(w * 0.2f, h * 0.88f),
+      size = Size(w * 0.6f, h * 0.12f)
+    )
+
+    drawLine(
+      color = Color(0xFF5D4037),
+      start = Offset(cx, h * 0.25f),
+      end = Offset(cx + w * 0.05f, h * 0.12f),
+      strokeWidth = w * 0.08f,
+      cap = StrokeCap.Round
+    )
+
+    val leaf = Path().apply {
+      moveTo(cx + w * 0.02f, h * 0.18f)
+      cubicTo(cx + w * 0.25f, h * 0.10f, cx + w * 0.35f, h * 0.20f, cx + w * 0.02f, h * 0.24f)
+      close()
+    }
+    drawPath(leaf, color = Color(0xFF22C55E))
+
+    drawCircle(
+      brush = Brush.radialGradient(
+        colors = listOf(Color(0xFFFDBA74), Color(0xFFF97316), Color(0xFFEA580C)),
+        center = Offset(cx - w * 0.12f, h * 0.48f),
+        radius = w * 0.42f
+      ),
+      radius = w * 0.38f,
+      center = Offset(cx, h * 0.56f)
+    )
+
+    drawOval(
+      color = Color(0x55FFFFFF),
+      topLeft = Offset(cx - w * 0.22f, h * 0.38f),
+      size = Size(w * 0.22f, h * 0.14f)
+    )
+  }
+}
+
+/**
+ * Cheerful curved Yellow Banana.
+ */
+@Composable
+fun IllustratedBanana(
+  modifier: Modifier = Modifier,
+  sizeDp: Dp = 44.dp
+) {
+  Canvas(modifier = modifier.size(sizeDp)) {
+    val w = size.width
+    val h = size.height
+
+    drawOval(
+      color = Color(0x30000000),
+      topLeft = Offset(w * 0.15f, h * 0.88f),
+      size = Size(w * 0.7f, h * 0.12f)
+    )
+
+    val bananaPath = Path().apply {
+      moveTo(w * 0.18f, h * 0.25f)
+      cubicTo(w * 0.12f, h * 0.65f, w * 0.55f, h * 0.88f, w * 0.82f, h * 0.72f)
+      cubicTo(w * 0.62f, h * 0.75f, w * 0.26f, h * 0.60f, w * 0.22f, h * 0.30f)
+      close()
+    }
+    drawPath(
+      path = bananaPath,
+      brush = Brush.linearGradient(
+        colors = listOf(Color(0xFFFEF08A), Color(0xFFFACC15), Color(0xFFEAB308)),
+        start = Offset(w * 0.2f, h * 0.3f),
+        end = Offset(w * 0.7f, h * 0.8f)
+      )
+    )
+
+    drawCircle(
+      color = Color(0xFF854D0E),
+      radius = w * 0.05f,
+      center = Offset(w * 0.18f, h * 0.25f)
+    )
+
+    drawCircle(
+      color = Color(0xFF713F12),
+      radius = w * 0.04f,
+      center = Offset(w * 0.82f, h * 0.72f)
+    )
+  }
+}
+
+/**
+ * Cute Red Strawberry with seeds and green leafy top.
+ */
+@Composable
+fun IllustratedStrawberry(
+  modifier: Modifier = Modifier,
+  sizeDp: Dp = 44.dp
+) {
+  Canvas(modifier = modifier.size(sizeDp)) {
+    val w = size.width
+    val h = size.height
+    val cx = w * 0.5f
+
+    drawOval(
+      color = Color(0x30000000),
+      topLeft = Offset(w * 0.2f, h * 0.88f),
+      size = Size(w * 0.6f, h * 0.12f)
+    )
+
+    val body = Path().apply {
+      moveTo(cx, h * 0.85f)
+      cubicTo(w * 0.12f, h * 0.65f, w * 0.15f, h * 0.35f, cx, h * 0.30f)
+      cubicTo(w * 0.85f, h * 0.35f, w * 0.88f, h * 0.65f, cx, h * 0.85f)
+      close()
+    }
+    drawPath(
+      path = body,
+      brush = Brush.radialGradient(
+        colors = listOf(Color(0xFFF87171), Color(0xFFEF4444), Color(0xFFDC2626)),
+        center = Offset(cx - w * 0.1f, h * 0.45f),
+        radius = w * 0.45f
+      )
+    )
+
+    val seedColor = Color(0xFFFEF08A)
+    drawCircle(seedColor, radius = w * 0.025f, center = Offset(cx - w * 0.15f, h * 0.50f))
+    drawCircle(seedColor, radius = w * 0.025f, center = Offset(cx + w * 0.15f, h * 0.50f))
+    drawCircle(seedColor, radius = w * 0.025f, center = Offset(cx, h * 0.62f))
+    drawCircle(seedColor, radius = w * 0.025f, center = Offset(cx - w * 0.08f, h * 0.72f))
+    drawCircle(seedColor, radius = w * 0.025f, center = Offset(cx + w * 0.08f, h * 0.72f))
+
+    val cap = Path().apply {
+      moveTo(cx, h * 0.30f)
+      lineTo(cx - w * 0.22f, h * 0.22f)
+      lineTo(cx - w * 0.08f, h * 0.30f)
+      lineTo(cx, h * 0.18f)
+      lineTo(cx + w * 0.08f, h * 0.30f)
+      lineTo(cx + w * 0.22f, h * 0.22f)
+      close()
+    }
+    drawPath(cap, color = Color(0xFF22C55E))
+  }
+}
+
+/**
+ * Juicy Purple Grapes cluster.
+ */
+@Composable
+fun IllustratedGrapes(
+  modifier: Modifier = Modifier,
+  sizeDp: Dp = 44.dp
+) {
+  Canvas(modifier = modifier.size(sizeDp)) {
+    val w = size.width
+    val h = size.height
+    val cx = w * 0.5f
+
+    drawOval(
+      color = Color(0x30000000),
+      topLeft = Offset(w * 0.2f, h * 0.88f),
+      size = Size(w * 0.6f, h * 0.12f)
+    )
+
+    drawLine(
+      color = Color(0xFF65A30D),
+      start = Offset(cx, h * 0.25f),
+      end = Offset(cx + w * 0.08f, h * 0.12f),
+      strokeWidth = w * 0.07f,
+      cap = StrokeCap.Round
+    )
+
+    val grapeRadius = w * 0.14f
+    val grapeColor1 = Color(0xFFA855F7)
+    val grapeColor2 = Color(0xFF7E22CE)
+
+    fun drawGrape(gx: Float, gy: Float) {
+      drawCircle(
+        brush = Brush.radialGradient(
+          colors = listOf(grapeColor1, grapeColor2),
+          center = Offset(gx - grapeRadius * 0.3f, gy - grapeRadius * 0.3f),
+          radius = grapeRadius
+        ),
+        radius = grapeRadius,
+        center = Offset(gx, gy)
+      )
+    }
+
+    drawGrape(cx - w * 0.18f, h * 0.36f)
+    drawGrape(cx, h * 0.34f)
+    drawGrape(cx + w * 0.18f, h * 0.36f)
+    drawGrape(cx - w * 0.10f, h * 0.52f)
+    drawGrape(cx + w * 0.10f, h * 0.52f)
+    drawGrape(cx, h * 0.70f)
+  }
+}
+
+/**
+ * Refreshing Watermelon Slice with seeds.
+ */
+@Composable
+fun IllustratedWatermelon(
+  modifier: Modifier = Modifier,
+  sizeDp: Dp = 44.dp
+) {
+  Canvas(modifier = modifier.size(sizeDp)) {
+    val w = size.width
+    val h = size.height
+    val cx = w * 0.5f
+
+    drawOval(
+      color = Color(0x30000000),
+      topLeft = Offset(w * 0.15f, h * 0.88f),
+      size = Size(w * 0.7f, h * 0.12f)
+    )
+
+    val rind = Path().apply {
+      moveTo(w * 0.15f, h * 0.40f)
+      cubicTo(w * 0.25f, h * 0.85f, w * 0.75f, h * 0.85f, w * 0.85f, h * 0.40f)
+      lineTo(w * 0.80f, h * 0.40f)
+      cubicTo(w * 0.70f, h * 0.78f, w * 0.30f, h * 0.78f, w * 0.20f, h * 0.40f)
+      close()
+    }
+    drawPath(rind, color = Color(0xFF16A34A))
+
+    val flesh = Path().apply {
+      moveTo(w * 0.20f, h * 0.40f)
+      cubicTo(w * 0.30f, h * 0.76f, w * 0.70f, h * 0.76f, w * 0.80f, h * 0.40f)
+      close()
+    }
+    drawPath(
+      path = flesh,
+      brush = Brush.radialGradient(
+        colors = listOf(Color(0xFFFB7185), Color(0xFFF43F5E), Color(0xFFE11D48)),
+        center = Offset(cx, h * 0.52f),
+        radius = w * 0.35f
+      )
+    )
+
+    val seedColor = Color(0xFF1E293B)
+    drawOval(seedColor, topLeft = Offset(cx - w * 0.12f, h * 0.48f), size = Size(w * 0.05f, h * 0.08f))
+    drawOval(seedColor, topLeft = Offset(cx + w * 0.08f, h * 0.48f), size = Size(w * 0.05f, h * 0.08f))
+    drawOval(seedColor, topLeft = Offset(cx - w * 0.02f, h * 0.58f), size = Size(w * 0.05f, h * 0.08f))
+  }
+}
+
+/**
  * Master tangible item renderer.
  */
 @Composable
@@ -590,6 +844,13 @@ fun IllustratedItemIcon(
 ) {
   when (itemType) {
     TangibleItemType.SHINY_APPLE -> IllustratedShinyApple(modifier = modifier, sizeDp = sizeDp)
+    TangibleItemType.SWEET_ORANGE -> IllustratedSweetOrange(modifier = modifier, sizeDp = sizeDp)
+    TangibleItemType.YELLOW_BANANA -> IllustratedBanana(modifier = modifier, sizeDp = sizeDp)
+    TangibleItemType.RED_STRAWBERRY -> IllustratedStrawberry(modifier = modifier, sizeDp = sizeDp)
+    TangibleItemType.PURPLE_GRAPES -> IllustratedGrapes(modifier = modifier, sizeDp = sizeDp)
+    TangibleItemType.JUICY_WATERMELON -> IllustratedWatermelon(modifier = modifier, sizeDp = sizeDp)
+
+    // Fallbacks
     TangibleItemType.GOLDEN_STAR -> IllustratedStar(modifier = modifier, isFilled = true, sizeDp = sizeDp)
     TangibleItemType.ENERGY_BATTERY -> IllustratedEnergyBattery(modifier = modifier, sizeDp = sizeDp)
     TangibleItemType.MAGIC_CRYSTAL -> IllustratedGem(modifier = modifier, sizeDp = sizeDp)

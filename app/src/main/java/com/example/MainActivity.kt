@@ -27,15 +27,7 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       MyApplicationTheme(dynamicColor = false) {
-        // Enforce RTL direction for kid Arabic interface
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-          Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = androidx.compose.material3.MaterialTheme.colorScheme.background
-          ) {
-            KidMathApp(viewModel = viewModel)
-          }
-        }
+        KidMathApp(viewModel = viewModel)
       }
     }
   }
@@ -53,6 +45,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun KidMathApp(viewModel: KidMathViewModel) {
+  val currentLanguage by viewModel.currentLanguage.collectAsStateWithLifecycle()
   val challenge by viewModel.currentChallenge.collectAsStateWithLifecycle()
   val selectedOp by viewModel.selectedOp.collectAsStateWithLifecycle()
   val selectedDifficulty by viewModel.selectedDifficulty.collectAsStateWithLifecycle()
@@ -66,23 +59,34 @@ fun KidMathApp(viewModel: KidMathViewModel) {
   val isSlotAnswerWrong by viewModel.isSlotAnswerWrong.collectAsStateWithLifecycle()
   val isSoundEnabled by viewModel.soundManager.isSoundEnabled.collectAsStateWithLifecycle()
 
-  // Chalkboard screen with hand-written questions and drag-and-drop
-  ChalkboardPlayScreen(
-    challenge = challenge,
-    selectedOp = selectedOp,
-    selectedDifficulty = selectedDifficulty,
-    adaptiveTier = adaptiveTier,
-    totalStars = totalStars,
-    comboStreak = comboStreak,
-    buttonStates = buttonStates,
-    currentSlotAnswer = currentSlotAnswer,
-    isSlotAnswerWrong = isSlotAnswerWrong,
-    correctCheer = correctCheer,
-    confettiTrigger = confettiTrigger,
-    isSoundEnabled = isSoundEnabled,
-    onToggleSound = { viewModel.toggleSound() },
-    onSelectOp = { op -> viewModel.onSelectOp(op) },
-    onSelectDifficulty = { diff -> viewModel.onSelectDifficulty(diff) },
-    onAnswerDropped = { answer -> viewModel.onDirectAnswerSelected(answer) }
-  )
+  // Dynamic layout direction based on chosen language (RTL for Moroccan Arabic, LTR for French & English)
+  CompositionLocalProvider(
+    LocalLayoutDirection provides if (currentLanguage.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+  ) {
+    Surface(
+      modifier = Modifier.fillMaxSize(),
+      color = androidx.compose.material3.MaterialTheme.colorScheme.background
+    ) {
+      ChalkboardPlayScreen(
+        challenge = challenge,
+        selectedOp = selectedOp,
+        selectedDifficulty = selectedDifficulty,
+        adaptiveTier = adaptiveTier,
+        totalStars = totalStars,
+        comboStreak = comboStreak,
+        buttonStates = buttonStates,
+        currentSlotAnswer = currentSlotAnswer,
+        isSlotAnswerWrong = isSlotAnswerWrong,
+        correctCheer = correctCheer,
+        confettiTrigger = confettiTrigger,
+        isSoundEnabled = isSoundEnabled,
+        currentLanguage = currentLanguage,
+        onSelectLanguage = { lang -> viewModel.setLanguage(lang) },
+        onToggleSound = { viewModel.toggleSound() },
+        onSelectOp = { op -> viewModel.onSelectOp(op) },
+        onSelectDifficulty = { diff -> viewModel.onSelectDifficulty(diff) },
+        onAnswerDropped = { answer -> viewModel.onDirectAnswerSelected(answer) }
+      )
+    }
+  }
 }

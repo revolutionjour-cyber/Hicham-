@@ -7,8 +7,10 @@ import com.example.audio.KidSoundManager
 import com.example.data.KidGameRepository
 import com.example.data.KidGameState
 import com.example.model.AdaptiveQuestionGenerator
+import com.example.model.AppLanguage
 import com.example.model.Difficulty
 import com.example.model.DynamicMathChallenge
+import com.example.model.LanguageStrings
 import com.example.model.MathOp
 import com.example.model.MathQuestion
 import com.example.model.MonsterMathChallenge
@@ -61,6 +63,10 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
 
   val gameState: StateFlow<KidGameState> = repository.gameState
 
+  // Language State: Moroccan Arabic (default), French, or English
+  private val _currentLanguage = MutableStateFlow(AppLanguage.MOROCCAN_ARABIC)
+  val currentLanguage: StateFlow<AppLanguage> = _currentLanguage.asStateFlow()
+
   // Direct Playing State
   private val _selectedOp = MutableStateFlow(MathOp.PLUS)
   val selectedOp: StateFlow<MathOp> = _selectedOp.asStateFlow()
@@ -75,7 +81,8 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
     AdaptiveQuestionGenerator.generateQuestion(
       chosenOp = MathOp.PLUS,
       difficulty = Difficulty.EASY,
-      adaptiveTier = 1
+      adaptiveTier = 1,
+      lang = AppLanguage.MOROCCAN_ARABIC
     )
   )
   val currentChallenge: StateFlow<DynamicMathChallenge> = _currentChallenge.asStateFlow()
@@ -133,6 +140,12 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
     refreshNewQuestion()
   }
 
+  fun setLanguage(lang: AppLanguage) {
+    _currentLanguage.value = lang
+    soundManager.setLanguage(lang)
+    refreshNewQuestion()
+  }
+
   fun onDirectAnswerSelected(selectedAnswer: Int) {
     if (isAdvancingQuestion) return
     val challenge = _currentChallenge.value
@@ -156,18 +169,44 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
       }
 
       val cheers = if (newStreak >= 2) {
-        listOf(
-          "إجابة عبقرية متتالية x$newStreak! 🔥",
-          "رائع جداً! مستوى ذكاء متصاعد x$newStreak! 🌟",
-          "أنت بطل الرياضيات بلا منازع! 🚀"
-        )
+        when (_currentLanguage.value) {
+          AppLanguage.MOROCCAN_ARABIC -> listOf(
+            "إجابة واعرة متتالية x$newStreak! 🔥",
+            "تبارك الله! الذكاء طالع x$newStreak! 🌟",
+            "نتا هو بطل الحساب! 🚀"
+          )
+          AppLanguage.FRENCH -> listOf(
+            "Série incroyable x$newStreak ! 🔥",
+            "Super champion x$newStreak ! 🌟",
+            "Le boss des maths ! 🚀"
+          )
+          AppLanguage.ENGLISH -> listOf(
+            "Mega streak x$newStreak! 🔥",
+            "Brain power scaling x$newStreak! 🌟",
+            "Undisputed math hero! 🚀"
+          )
+        }
       } else {
-        listOf(
-          "أحسنت يا بطل! 👏",
-          "إجابة صحيحة وممتازة! 🌟",
-          "رائع جداً! ✨",
-          "ممتاز يا عبقري! 🎯"
-        )
+        when (_currentLanguage.value) {
+          AppLanguage.MOROCCAN_ARABIC -> listOf(
+            "تبارك الله عليك يا بطل! 🌟",
+            "واعر بزاف! إجابة صحيحة! 🎯",
+            "ممتاز يا فنان! 🚀",
+            "برافو عليك! تبارك الله! 👑"
+          )
+          AppLanguage.FRENCH -> listOf(
+            "Bravo champion ! 🌟",
+            "Super travail ! C'est exact ! 🎯",
+            "Excellent, tu es un génie ! 🚀",
+            "Magnifique réponse ! 👑"
+          )
+          AppLanguage.ENGLISH -> listOf(
+            "Awesome job, superstar! 🌟",
+            "Spot on! Correct answer! 🎯",
+            "Brilliant, math genius! 🚀",
+            "Keep shining, champion! 👑"
+          )
+        }
       }
 
       _directButtonStates.value = mapOf(selectedAnswer to AnswerButtonState.CORRECT)
@@ -189,11 +228,23 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
       _directButtonStates.value = mapOf(selectedAnswer to AnswerButtonState.WRONG)
       _comboStreak.value = 0
 
-      val encouragingPhrases = listOf(
-        "لا بأس، حاول ثانية! 💪",
-        "فكر مرة أخرى، أنت تستطيع! ✨",
-        "قريب جداً، أعد المحاولة! 🎯"
-      )
+      val encouragingPhrases = when (_currentLanguage.value) {
+        AppLanguage.MOROCCAN_ARABIC -> listOf(
+          "غير بشوية، عاود حاول مرة خرى! 💪",
+          "قربتي بزاف، جر الرقم الصحيح! 🎯",
+          "ماشي مشكل، نتا بطل وعاود جرب! ⭐"
+        )
+        AppLanguage.FRENCH -> listOf(
+          "Réessaie encore, tu peux le faire ! 💪",
+          "Presque ! Essaie encore un chiffre ! 🎯",
+          "Pas de souci, continue champion ! ⭐"
+        )
+        AppLanguage.ENGLISH -> listOf(
+          "Try again, you can do it! 💪",
+          "Almost there! Try another number! 🎯",
+          "Don't give up, champion! ⭐"
+        )
+      }
       _correctCheer.value = encouragingPhrases.random()
 
       viewModelScope.launch {
@@ -212,7 +263,8 @@ class KidMathViewModel(application: Application) : AndroidViewModel(application)
     _currentChallenge.value = AdaptiveQuestionGenerator.generateQuestion(
       chosenOp = _selectedOp.value,
       difficulty = _selectedDifficulty.value,
-      adaptiveTier = _adaptiveTier.value
+      adaptiveTier = _adaptiveTier.value,
+      lang = _currentLanguage.value
     )
   }
 

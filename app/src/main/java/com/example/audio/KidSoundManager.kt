@@ -10,6 +10,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
+import com.example.model.AppLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   val isSoundEnabled: StateFlow<Boolean> = _isSoundEnabled.asStateFlow()
 
   private var isAppActive = true
+  private var currentLang: AppLanguage = AppLanguage.MOROCCAN_ARABIC
 
   // Direct Hardware-independent AudioTracks for instant sound
   private var trackSuccess1: AudioTrack? = null
@@ -134,6 +136,19 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
     }
   }
 
+  fun setLanguage(lang: AppLanguage) {
+    currentLang = lang
+    try {
+      val locale = when (lang) {
+        AppLanguage.MOROCCAN_ARABIC -> Locale("ar")
+        AppLanguage.FRENCH -> Locale.FRENCH
+        AppLanguage.ENGLISH -> Locale.ENGLISH
+      }
+      val result = tts?.setLanguage(locale)
+      isTtsReady = (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
+    } catch (_: Throwable) {}
+  }
+
   fun toggleSound() {
     _isSoundEnabled.value = !_isSoundEnabled.value
     if (_isSoundEnabled.value) {
@@ -151,7 +166,7 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   }
 
   /**
-   * Cheerful, joyful sound played on correct answer + encouraging Arabic voice praise!
+   * Cheerful, joyful sound played on correct answer + encouraging voice praise!
    */
   fun playSuccess() {
     if (!_isSoundEnabled.value || !isAppActive) return
@@ -179,7 +194,12 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   fun playLevelUp() {
     if (!_isSoundEnabled.value || !isAppActive) return
     playTrack(trackFanfare)
-    speakText("ما شاء الله! ترقية ممتازة يا بطل!")
+    val text = when (currentLang) {
+      AppLanguage.MOROCCAN_ARABIC -> "تبارك الله عليك يا بطل! ترقية واعرة بزاف!"
+      AppLanguage.FRENCH -> "Bravo champion ! Niveau supérieur !"
+      AppLanguage.ENGLISH -> "Awesome job! Level up!"
+    }
+    speakText(text)
     vibrateQuick(70)
   }
 
@@ -199,11 +219,21 @@ class KidSoundManager(private val context: Context) : TextToSpeech.OnInitListene
   }
 
   private fun speakPraise() {
-    playRawSoundOrFallback("correct_answer", "إجابة صحيحة!")
+    val praiseText = when (currentLang) {
+      AppLanguage.MOROCCAN_ARABIC -> "تبارك الله عليك! إجابة صحيحة!"
+      AppLanguage.FRENCH -> "Bravo ! Bonne réponse !"
+      AppLanguage.ENGLISH -> "Great job! That's correct!"
+    }
+    playRawSoundOrFallback("correct_answer", praiseText)
   }
 
   private fun speakEncouragement() {
-    playRawSoundOrFallback("wrong_answer", "حاول مرة أخرى!")
+    val encouragementText = when (currentLang) {
+      AppLanguage.MOROCCAN_ARABIC -> "غير بشوية، عاود حاول مرة خرى!"
+      AppLanguage.FRENCH -> "Réessaie encore, tu peux le faire !"
+      AppLanguage.ENGLISH -> "Try again, you can do it!"
+    }
+    playRawSoundOrFallback("wrong_answer", encouragementText)
   }
 
   private fun playRawSoundOrFallback(rawResName: String, fallbackText: String) {

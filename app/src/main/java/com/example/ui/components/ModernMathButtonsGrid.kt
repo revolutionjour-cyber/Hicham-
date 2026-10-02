@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.AppLanguage
+import com.example.model.LanguageStrings
 import com.example.model.MathOp
 import com.example.ui.theme.CairoFontFamily
 import com.example.ui.theme.FredokaFontFamily
@@ -59,14 +61,15 @@ import com.example.ui.theme.FredokaFontFamily
 fun ModernOperationSelectorRow(
   selectedOp: MathOp,
   onSelectOp: (MathOp) -> Unit,
+  currentLanguage: AppLanguage = AppLanguage.MOROCCAN_ARABIC,
   modifier: Modifier = Modifier
 ) {
   val operations = listOf(
-    Triple("+", MathOp.PLUS, "جمع"),
-    Triple("−", MathOp.MINUS, "طرح"),
-    Triple("×", MathOp.MULTIPLY, "ضرب"),
-    Triple("÷", MathOp.DIVIDE, "قسمة"),
-    Triple("🔀", MathOp.MIXED, "شامل")
+    Pair("+", MathOp.PLUS),
+    Pair("−", MathOp.MINUS),
+    Pair("×", MathOp.MULTIPLY),
+    Pair("÷", MathOp.DIVIDE),
+    Pair("🔀", MathOp.MIXED)
   )
 
   Row(
@@ -76,7 +79,8 @@ fun ModernOperationSelectorRow(
     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    operations.forEach { (sym, op, title) ->
+    operations.forEach { (sym, op) ->
+      val title = LanguageStrings.getOpTitle(op, currentLanguage)
       val isSelected = (selectedOp == op)
       val activeTextColor = when (op) {
         MathOp.PLUS -> Color(0xFF2563EB)

@@ -37,10 +37,10 @@ object AdaptiveQuestionGenerator {
   fun generateQuestion(
     chosenOp: MathOp,
     difficulty: Difficulty,
-    adaptiveTier: Int // e.g. 1..5 scaling automatically with streak
+    adaptiveTier: Int, // e.g. 1..5 scaling automatically with streak
+    lang: AppLanguage = AppLanguage.MOROCCAN_ARABIC
   ): DynamicMathChallenge {
-    val items = TangibleItemType.values()
-    val randomItem = items.random()
+    val randomItem = TangibleItemType.KNOWN_FRUITS.random()
 
     var attempts = 0
     while (attempts < 50) {
@@ -54,9 +54,9 @@ object AdaptiveQuestionGenerator {
       }
 
       val (a, b, ans, prompt) = when (difficulty) {
-        Difficulty.EASY -> generateEasy(op, adaptiveTier, randomItem)
-        Difficulty.MEDIUM -> generateMedium(op, adaptiveTier, randomItem)
-        Difficulty.HARD -> generateHard(op, adaptiveTier, randomItem)
+        Difficulty.EASY -> generateEasy(op, adaptiveTier, randomItem, lang)
+        Difficulty.MEDIUM -> generateMedium(op, adaptiveTier, randomItem, lang)
+        Difficulty.HARD -> generateHard(op, adaptiveTier, randomItem, lang)
       }
 
       val signature = "$a${op.symbol}$b"
@@ -90,98 +90,151 @@ object AdaptiveQuestionGenerator {
       effectiveOp = MathOp.PLUS,
       answer = 4,
       options = listOf(3, 4, 5, 6),
-      storyPromptAr = "احسب ناتج: ٢ + ٢",
+      storyPromptAr = if (lang == AppLanguage.FRENCH) "Calcule : 2 + 2" else if (lang == AppLanguage.ENGLISH) "Calculate: 2 + 2" else "حسب دابا: 2 + 2",
       itemType = TangibleItemType.SHINY_APPLE,
       difficulty = difficulty,
       adaptiveTier = adaptiveTier
     )
   }
 
-  private fun generateEasy(op: MathOp, tier: Int, item: TangibleItemType): Quad<Int, Int, Int, String> {
-    val itemName = item.titleAr
+  private fun generateEasy(
+    op: MathOp,
+    tier: Int,
+    item: TangibleItemType,
+    lang: AppLanguage
+  ): Quad<Int, Int, Int, String> {
     return when (op) {
       MathOp.PLUS -> {
         val a = Random.nextInt(1, 4 + tier)
         val b = Random.nextInt(1, 4 + tier)
         val ans = a + b
-        Quad(a, b, ans, "لدينا $a من $itemName، وأضفنا إليها $b.. كم أصبح المجموع؟")
+        Quad(a, b, ans, LanguageStrings.generateStoryPrompt(op, a, b, item, lang))
       }
       MathOp.MINUS -> {
         val a = Random.nextInt(3, 6 + tier)
         val b = Random.nextInt(1, a)
         val ans = a - b
-        Quad(a, b, ans, "كان في السلة $a من $itemName، أخذنا منها $b.. كم بقي؟")
+        Quad(a, b, ans, LanguageStrings.generateStoryPrompt(op, a, b, item, lang))
       }
       MathOp.MULTIPLY -> {
         val a = Random.nextInt(1, 3 + (tier / 2))
         val b = Random.nextInt(1, 3)
         val ans = a * b
-        Quad(a, b, ans, "$a مجموعات، في كل مجموعة $b من $itemName.. كم العدد الكلي؟")
+        Quad(a, b, ans, LanguageStrings.generateStoryPrompt(op, a, b, item, lang))
       }
       MathOp.DIVIDE, MathOp.MIXED -> {
         val b = Random.nextInt(1, 3)
         val quotient = Random.nextInt(1, 3 + (tier / 2))
         val a = b * quotient
-        Quad(a, b, quotient, "وزّعنا $a من $itemName بالتساوي على $b أصدقاء.. كم يأخذ كل واحد؟")
+        Quad(a, b, quotient, LanguageStrings.generateStoryPrompt(op, a, b, item, lang))
       }
     }
   }
 
-  private fun generateMedium(op: MathOp, tier: Int, item: TangibleItemType): Quad<Int, Int, Int, String> {
-    val itemName = item.titleAr
+  private fun generateMedium(
+    op: MathOp,
+    tier: Int,
+    item: TangibleItemType,
+    lang: AppLanguage
+  ): Quad<Int, Int, Int, String> {
     return when (op) {
       MathOp.PLUS -> {
         val a = Random.nextInt(5 + tier, 12 + tier * 2)
         val b = Random.nextInt(3 + tier, 10 + tier * 2)
         val ans = a + b
-        Quad(a, b, ans, "احسب ناتج جمع: $a + $b")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "حسب المجموع ديال: $a + $b"
+          AppLanguage.FRENCH -> "Calcule la somme : $a + $b"
+          AppLanguage.ENGLISH -> "Calculate the sum: $a + $b"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.MINUS -> {
         val a = Random.nextInt(10 + tier * 2, 20 + tier * 2)
         val b = Random.nextInt(3, a - 2)
         val ans = a - b
-        Quad(a, b, ans, "ما هو ناتج طرح: $a - $b ؟")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "شحال كيعطي الطرح: $a - $b ؟"
+          AppLanguage.FRENCH -> "Combien font : $a - $b ?"
+          AppLanguage.ENGLISH -> "What is $a - $b ?"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.MULTIPLY -> {
         val a = Random.nextInt(2, 6 + tier)
         val b = Random.nextInt(2, 5 + tier)
         val ans = a * b
-        Quad(a, b, ans, "ما حاصل ضرب: $a × $b ؟")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "شحال كيعطي الضرب: $a × $b ؟"
+          AppLanguage.FRENCH -> "Combien font : $a × $b ?"
+          AppLanguage.ENGLISH -> "What is $a × $b ?"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.DIVIDE, MathOp.MIXED -> {
         val b = Random.nextInt(2, 6)
         val quotient = Random.nextInt(2, 6 + tier)
         val a = b * quotient
-        Quad(a, b, quotient, "اقسم $a على $b، ما هو الناتج؟")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "قسم $a على $b، شحال النتيجة؟"
+          AppLanguage.FRENCH -> "Divise $a par $b : quel est le résultat ?"
+          AppLanguage.ENGLISH -> "Divide $a by $b: what is the result?"
+        }
+        Quad(a, b, quotient, prompt)
       }
     }
   }
 
-  private fun generateHard(op: MathOp, tier: Int, item: TangibleItemType): Quad<Int, Int, Int, String> {
+  private fun generateHard(
+    op: MathOp,
+    tier: Int,
+    item: TangibleItemType,
+    lang: AppLanguage
+  ): Quad<Int, Int, Int, String> {
     return when (op) {
       MathOp.PLUS -> {
         val a = Random.nextInt(15 + tier * 5, 45 + tier * 10)
         val b = Random.nextInt(15 + tier * 5, 45 + tier * 10)
         val ans = a + b
-        Quad(a, b, ans, "تحدي الأبطال: احسب مجموع $a + $b")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "تحدي الأبطال: حسب $a + $b"
+          AppLanguage.FRENCH -> "Défi des champions : calcule $a + $b"
+          AppLanguage.ENGLISH -> "Champions Challenge: calculate $a + $b"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.MINUS -> {
         val a = Random.nextInt(40 + tier * 10, 99)
         val b = Random.nextInt(15, a - 10)
         val ans = a - b
-        Quad(a, b, ans, "تحدي العباقرة: احسب $a - $b")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "تحدي العباقرة: حسب $a - $b"
+          AppLanguage.FRENCH -> "Défi des génies : calcule $a - $b"
+          AppLanguage.ENGLISH -> "Genius Challenge: calculate $a - $b"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.MULTIPLY -> {
         val a = Random.nextInt(6, 12)
         val b = Random.nextInt(4, 11)
         val ans = a * b
-        Quad(a, b, ans, "جدول الضرب المتقدم: ما ناتج $a × $b ؟")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "جدول الضرب المتقدم: ما ناتج $a × $b ؟"
+          AppLanguage.FRENCH -> "Table avancée : combien font $a × $b ?"
+          AppLanguage.ENGLISH -> "Advanced math: what is $a × $b ?"
+        }
+        Quad(a, b, ans, prompt)
       }
       MathOp.DIVIDE, MathOp.MIXED -> {
         val b = Random.nextInt(4, 10)
         val quotient = Random.nextInt(4, 12)
         val a = b * quotient
-        Quad(a, b, quotient, "القسمة السريعة: $a ÷ $b = ؟")
+        val prompt = when (lang) {
+          AppLanguage.MOROCCAN_ARABIC -> "القسمة السريعة: $a ÷ $b = ؟"
+          AppLanguage.FRENCH -> "Division rapide : $a ÷ $b = ?"
+          AppLanguage.ENGLISH -> "Speed division: $a ÷ $b = ?"
+        }
+        Quad(a, b, quotient, prompt)
       }
     }
   }
